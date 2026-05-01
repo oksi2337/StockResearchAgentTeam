@@ -1,0 +1,25 @@
+# 환경변수 (API 키, 토큰)
+.env
+
+# 수집 데이터 (용량 큰 JSON 파일들)
+data/marketcap-*.json
+data/index.json
+
+# 리서치 & 아웃풋
+output/
+research/
+
+# Node.js
+node_modules/
+dist/
+dist-server/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+
+# 빌드 & 캐시
+*.log
+.vite/

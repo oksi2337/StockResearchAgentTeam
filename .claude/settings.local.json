@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(rm \"C:\\\\Users\\\\kukuk\\\\.claude\\\\commands\\\\company-research.md\" \"C:\\\\Users\\\\kukuk\\\\.claude\\\\commands\\\\stock-report.md\")",
+      "Read(//c/Users/kukuk/.claude/commands/**)"
+    ]
+  }
+}

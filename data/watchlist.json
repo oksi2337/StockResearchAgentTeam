@@ -1,0 +1,120 @@
+{
+  "stocks": [
+    {
+      "ticker": "009150.KS",
+      "name": "삼성전기",
+      "added_at": "2026-05-01T23:28:50.038298"
+    },
+    {
+      "ticker": "LEU",
+      "name": "Centrus Energy",
+      "added_at": "2026-05-02T00:00:00.000000"
+    },
+    {
+      "ticker": "ETN",
+      "name": "Eaton Corp",
+      "added_at": "2026-05-02T00:00:00.000000"
+    },
+    {
+      "ticker": "003230.KS",
+      "name": "삼양식품",
+      "added_at": "2026-05-02T00:00:00.000000"
+    },
+    {
+      "ticker": "005380.KS",
+      "name": "현대차",
+      "added_at": "2026-05-02T00:00:00.000000"
+    },
+    {
+      "ticker": "012330.KS",
+      "name": "현대모비스",
+      "added_at": "2026-05-02T00:00:00.000000"
+    },
+    {
+      "ticker": "MRVL",
+      "name": "Marvell Technology",
+      "added_at": "2026-05-02T00:00:00.000000"
+    },
+    {
+      "ticker": "GEV",
+      "name": "GE Vernova",
+      "added_at": "2026-05-02T00:00:00.000000"
+    },
+    {
+      "ticker": "032830.KS",
+      "name": "삼성생명",
+      "added_at": "2026-05-02T00:00:00.000000"
+    },
+    {
+      "ticker": "079550.KS",
+      "name": "LIG넥스원",
+      "added_at": "2026-05-02T00:00:00.000000"
+    },
+    {
+      "ticker": "AMZN",
+      "name": "Amazon",
+      "added_at": "2026-05-02T00:00:00.000000"
+    },
+    {
+      "ticker": "SNDK",
+      "name": "SanDisk",
+      "added_at": "2026-05-02T00:00:00.000000"
+    },
+    {
+      "ticker": "017670.KS",
+      "name": "SK텔레콤",
+      "added_at": "2026-05-02T00:00:00.000000"
+    },
+    {
+      "ticker": "012450.KS",
+      "name": "한화에어로스페이스",
+      "added_at": "2026-05-02T00:00:00.000000"
+    },
+    {
+      "ticker": "TSM",
+      "name": "TSMC",
+      "added_at": "2026-05-02T00:00:00.000000"
+    },
+    {
+      "ticker": "GOOGL",
+      "name": "Alphabet",
+      "added_at": "2026-05-02T00:00:00.000000"
+    },
+    {
+      "ticker": "NVDA",
+      "name": "NVIDIA",
+      "added_at": "2026-05-02T00:00:00.000000"
+    },
+    {
+      "ticker": "000660.KS",
+      "name": "SK하이닉스",
+      "added_at": "2026-05-02T00:00:00.000000"
+    },
+    {
+      "ticker": "005930.KS",
+      "name": "삼성전자",
+      "added_at": "2026-05-02T00:00:00.000000"
+    },
+    {
+      "ticker": "MSFT",
+      "name": "Microsoft",
+      "added_at": "2026-05-02T00:01:00.000000"
+    },
+    {
+      "ticker": "META",
+      "name": "Meta",
+      "added_at": "2026-05-02T00:01:00.000000"
+    },
+    {
+      "ticker": "PLTR",
+      "name": "Palantir Technologies",
+      "added_at": "2026-05-02T00:01:00.000000"
+    },
+    {
+      "ticker": "EMR",
+      "name": "Emerson Electric",
+      "added_at": "2026-05-02T00:01:00.000000"
+    }
+  ],
+  "updated_at": "2026-05-02T00:32:45.235210"
+}
