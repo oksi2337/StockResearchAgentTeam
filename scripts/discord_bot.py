@@ -199,6 +199,35 @@ def build_analysis_embed(ticker: str, tech: dict, fund: dict) -> discord.Embed:
     return embed
 
 
+# ── 종목명 → 티커 변환 헬퍼 ─────────────────────────────────
+import sys as _sys
+_sys.path.insert(0, os.path.dirname(__file__))
+from kr_stocks import resolve_ticker, find_ticker, is_korean
+
+
+async def resolve_or_reply(interaction: discord.Interaction, input_str: str) -> tuple[str | None, str | None]:
+    """
+    종목명 또는 티커 입력을 (ticker, name)으로 변환.
+    여러 후보가 있으면 Discord에 목록 표시 후 None 반환.
+    """
+    loop = asyncio.get_event_loop()
+    ticker, name = await loop.run_in_executor(None, resolve_ticker, input_str)
+
+    if ticker:
+        return ticker, name or input_str
+
+    if is_korean(input_str):
+        candidates = await loop.run_in_executor(None, find_ticker, input_str)
+        if not candidates:
+            await interaction.followup.send(f"❌ **{input_str}** 종목을 찾을 수 없어요. 티커로 직접 입력해보세요. (예: `005930.KS`)")
+            return None, None
+        lines = "\n".join([f"• {c['name']} → `{c['ticker']}` ({c['market']})" for c in candidates])
+        await interaction.followup.send(f"**'{input_str}'** 검색 결과:\n{lines}\n\n정확한 종목을 위 티커로 다시 입력해주세요.")
+        return None, None
+
+    return input_str.upper(), input_str.upper()
+
+
 # ── 슬래시 커맨드 ────────────────────────────────────────────
 guild_obj = discord.Object(id=GUILD_ID)
 
@@ -207,60 +236,65 @@ guild_obj = discord.Object(id=GUILD_ID)
 async def slash_watchlist(interaction: discord.Interaction):
     stocks = load_watchlist()
     if stocks:
-        ticker_list = "\n".join([f"• {s['ticker']}" for s in stocks])
-        await interaction.response.send_message(f"**📋 현재 워치리스트**\n{ticker_list}")
+        ticker_list = "\n".join([f"• {s.get('name', s['ticker'])} (`{s['ticker']}`)" for s in stocks])
+        await interaction.response.send_message(f"**📋 현재 워치리스트** ({len(stocks)}개)\n{ticker_list}")
     else:
         await interaction.response.send_message("워치리스트가 비어있어요.")
 
 
-@bot.tree.command(guild=guild_obj, name="추가", description="워치리스트에 종목 추가")
-async def slash_add(interaction: discord.Interaction, ticker: str):
-    ticker = ticker.upper()
+@bot.tree.command(guild=guild_obj, name="추가", description="워치리스트에 종목 추가 (종목명 또는 티커)")
+async def slash_add(interaction: discord.Interaction, 종목: str):
+    await interaction.response.defer()
+    ticker, name = await resolve_or_reply(interaction, 종목)
+    if not ticker:
+        return
     stocks = load_watchlist()
     if ticker not in [s["ticker"] for s in stocks]:
-        stocks.append({"ticker": ticker, "added_at": datetime.now().isoformat()})
+        stocks.append({"ticker": ticker, "name": name or ticker, "added_at": datetime.now().isoformat()})
         save_watchlist(stocks)
-        await interaction.response.send_message(f"✅ **{ticker}** 워치리스트에 추가됨")
+        await interaction.followup.send(f"✅ **{name or ticker}** (`{ticker}`) 워치리스트에 추가됨")
     else:
-        await interaction.response.send_message(f"**{ticker}**은 이미 워치리스트에 있어요.")
+        await interaction.followup.send(f"**{name or ticker}**은 이미 워치리스트에 있어요.")
 
 
-@bot.tree.command(guild=guild_obj, name="삭제", description="워치리스트에서 종목 제거")
-async def slash_remove(interaction: discord.Interaction, ticker: str):
-    ticker = ticker.upper()
+@bot.tree.command(guild=guild_obj, name="삭제", description="워치리스트에서 종목 제거 (종목명 또는 티커)")
+async def slash_remove(interaction: discord.Interaction, 종목: str):
+    await interaction.response.defer()
+    ticker, name = await resolve_or_reply(interaction, 종목)
+    if not ticker:
+        return
     stocks = load_watchlist()
-    if ticker in [s["ticker"] for s in stocks]:
+    match = next((s for s in stocks if s["ticker"] == ticker), None)
+    if match:
         stocks = [s for s in stocks if s["ticker"] != ticker]
         save_watchlist(stocks)
-        await interaction.response.send_message(f"🗑️ **{ticker}** 워치리스트에서 제거됨")
+        await interaction.followup.send(f"🗑️ **{match.get('name', ticker)}** (`{ticker}`) 제거됨")
     else:
-        await interaction.response.send_message(f"**{ticker}**은 워치리스트에 없어요.")
+        await interaction.followup.send(f"**{ticker}**은 워치리스트에 없어요.")
 
 
-@bot.tree.command(guild=guild_obj, name="분석", description="개별 종목 기술적 분석 (빠름)")
-async def slash_analyze(interaction: discord.Interaction, ticker: str):
-    ticker = ticker.upper()
-    await interaction.response.send_message(f"📊 **{ticker}** 기술적 분석 중... #종목-분석 채널을 확인하세요.")
+@bot.tree.command(guild=guild_obj, name="분석", description="기술적 분석 (종목명 또는 티커, 빠름)")
+async def slash_analyze(interaction: discord.Interaction, 종목: str):
+    await interaction.response.defer()
+    ticker, name = await resolve_or_reply(interaction, 종목)
+    if not ticker:
+        return
+    await interaction.followup.send(f"📊 **{name or ticker}** (`{ticker}`) 기술적 분석 중... #종목-분석 채널을 확인하세요.")
     asyncio.create_task(run_stock_analysis(ticker, None))
 
 
-@bot.tree.command(guild=guild_obj, name="심층분석", description="개별 종목 심층 분석 — 뉴스·펀더멘털·증권사 의견 포함 (1~2분 소요)")
-async def slash_deep_analyze(interaction: discord.Interaction, ticker: str, company: str = ""):
-    ticker = ticker.upper()
-    # 워치리스트에서 이름 찾기
-    if not company:
-        stocks = load_watchlist()
-        match = next((s for s in stocks if s["ticker"] == ticker), None)
-        company = match["name"] if match else ticker
-
-    await interaction.response.send_message(
-        f"🔬 **{company} ({ticker})** 심층 분석 시작합니다.\n"
+@bot.tree.command(guild=guild_obj, name="심층분석", description="심층 분석 — 뉴스·펀더멘털·증권사 의견 포함 (1~2분, 종목명 또는 티커)")
+async def slash_deep_analyze(interaction: discord.Interaction, 종목: str):
+    await interaction.response.defer()
+    ticker, name = await resolve_or_reply(interaction, 종목)
+    if not ticker:
+        return
+    await interaction.followup.send(
+        f"🔬 **{name or ticker}** (`{ticker}`) 심층 분석 시작합니다.\n"
         f"뉴스·펀더멘털·증권사 의견 포함 — 1~2분 후 #종목-분석 채널을 확인하세요."
     )
-    import sys
-    sys.path.insert(0, os.path.dirname(__file__))
     from deep_analyst import analyze
-    asyncio.create_task(analyze(company, ticker))
+    asyncio.create_task(analyze(name or ticker, ticker))
 
 
 if __name__ == "__main__":

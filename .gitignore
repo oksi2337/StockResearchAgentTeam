@@ -4,6 +4,7 @@
 # 수집 데이터 (용량 큰 JSON 파일들)
 data/marketcap-*.json
 data/index.json
+data/kr_stocks_cache.json
 
 # 리서치 & 아웃풋
 output/
