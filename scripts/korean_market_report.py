@@ -2,6 +2,7 @@
 Korean Market Report — 매일 오후 3:30 (국장 마감 후) 실행
 KOSPI 시총 상위 20 (실시간) + 워치리스트 종목 분석 → #일간-요약 채널 전송
 """
+from __future__ import annotations
 import os
 import json
 import asyncio
@@ -115,7 +116,7 @@ def load_watchlist_kr() -> dict:
 async def run():
     print(f"[국장 리포트] 실행 시작: {datetime.now()}")
     today = datetime.now().strftime("%Y-%m-%d")
-    loop = asyncio.get_event_loop()
+    loop = asyncio.get_running_loop()
 
     # 1. 지수 수집
     index_lines = []

@@ -2,6 +2,7 @@
 Sector Analyst — 매일 장 마감 후 실행
 섹터별 시총 집계, 자금 흐름, 섹터 로테이션 분석 → #섹터-동향 전송
 """
+from __future__ import annotations
 import os
 import json
 import asyncio

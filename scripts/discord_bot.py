@@ -1,11 +1,14 @@
 import discord
-from discord.ext import commands
+from discord.ext import commands, tasks
 import os
 import json
 import asyncio
 import subprocess
-from datetime import datetime
+from datetime import datetime, time, timezone, timedelta
 from dotenv import load_dotenv
+
+KST = timezone(timedelta(hours=9))
+DAILY_INDICATOR_TIME = time(hour=7, minute=0, tzinfo=KST)
 
 load_dotenv(dotenv_path=os.path.join(os.path.dirname(__file__), "..", ".env"))
 
@@ -35,6 +38,24 @@ def save_watchlist(stocks: list):
         json.dump({"stocks": stocks, "updated_at": datetime.now().isoformat()}, f, ensure_ascii=False, indent=2)
 
 
+# ── 오전 7시 자동 지표 전송 ──────────────────────────────────
+@tasks.loop(time=DAILY_INDICATOR_TIME)
+async def daily_indicators():
+    channel = bot.get_channel(CH_MARKET_ALERT)
+    if not channel:
+        print("[일일 지표] 채널을 찾을 수 없음")
+        return
+    try:
+        from market_indicators import fetch_all, build_embeds
+        loop = asyncio.get_running_loop()
+        data = await loop.run_in_executor(None, fetch_all)
+        embeds = build_embeds(data)
+        await channel.send(content="📊 **오전 7시 시장 지표**", embeds=embeds)
+        print(f"[일일 지표] 전송 완료 {datetime.now(KST).strftime('%Y-%m-%d %H:%M')}")
+    except Exception as e:
+        print(f"[일일 지표] 전송 실패: {e}")
+
+
 # ── 봇 이벤트 ───────────────────────────────────────────────
 @bot.event
 async def on_ready():
@@ -45,6 +66,8 @@ async def on_ready():
         print(f"[슬래시 커맨드] {len(synced)}개 동기화 완료")
     except Exception as e:
         print(f"[슬래시 커맨드] 동기화 실패: {e}")
+    daily_indicators.start()
+    print(f"[일일 지표] 매일 07:00 KST 자동 전송 예약됨")
 
 
 # ── 자연어 메시지 처리 ───────────────────────────────────────
@@ -126,23 +149,19 @@ async def on_message(message: discord.Message):
 async def run_stock_analysis(ticker: str, reply_channel):
     """기술적 분석 실행 후 Discord에 전송"""
     try:
-        result = await asyncio.get_event_loop().run_in_executor(
-            None,
-            lambda: __import__("yahoo_finance", fromlist=["get_technical_indicators", "get_fundamentals"]),
-        )
-        import sys
-        sys.path.insert(0, os.path.dirname(__file__))
+        loop = asyncio.get_running_loop()
         from yahoo_finance import get_technical_indicators, get_fundamentals
 
-        tech = get_technical_indicators(ticker)
-        fund = get_fundamentals(ticker)
+        tech = await loop.run_in_executor(None, get_technical_indicators, ticker)
+        fund = await loop.run_in_executor(None, get_fundamentals, ticker)
 
         channel = bot.get_channel(CH_STOCK_ANALYSIS)
         if channel and tech:
             embed = build_analysis_embed(ticker, tech, fund)
             await channel.send(embed=embed)
     except Exception as e:
-        await reply_channel.send(f"❌ {ticker} 분석 중 오류: {e}")
+        if reply_channel:
+            await reply_channel.send(f"❌ {ticker} 분석 중 오류: {e}")
 
 
 def build_analysis_embed(ticker: str, tech: dict, fund: dict) -> discord.Embed:
@@ -205,12 +224,12 @@ _sys.path.insert(0, os.path.dirname(__file__))
 from kr_stocks import resolve_ticker, find_ticker, is_korean
 
 
-async def resolve_or_reply(interaction: discord.Interaction, input_str: str) -> tuple[str | None, str | None]:
+async def resolve_or_reply(interaction: discord.Interaction, input_str: str) -> tuple:
     """
     종목명 또는 티커 입력을 (ticker, name)으로 변환.
     여러 후보가 있으면 Discord에 목록 표시 후 None 반환.
     """
-    loop = asyncio.get_event_loop()
+    loop = asyncio.get_running_loop()
     ticker, name = await loop.run_in_executor(None, resolve_ticker, input_str)
 
     if ticker:
@@ -295,6 +314,44 @@ async def slash_deep_analyze(interaction: discord.Interaction, 종목: str):
     )
     from deep_analyst import analyze
     asyncio.create_task(analyze(name or ticker, ticker))
+
+
+@bot.tree.command(guild=guild_obj, name="지표", description="주요 시장 지표 현황 (글로벌 지수·금리·통화·한국 시장)")
+async def slash_indicators(interaction: discord.Interaction):
+    await interaction.response.defer()
+    import traceback as _tb
+
+    try:
+        from market_indicators import fetch_all, build_embeds
+    except Exception as e:
+        tb = _tb.format_exc()
+        print(f"[지표] 임포트 오류:\n{tb}")
+        await interaction.followup.send(f"❌ 지표 모듈 로드 실패: {e}\n```{tb[-600:]}```")
+        return
+
+    try:
+        loop = asyncio.get_running_loop()
+        data = await loop.run_in_executor(None, fetch_all)
+    except Exception as e:
+        tb = _tb.format_exc()
+        print(f"[지표] 데이터 수집 오류:\n{tb}")
+        await interaction.followup.send(f"❌ 지표 데이터 수집 실패: {e}\n```{tb[-600:]}```")
+        return
+
+    try:
+        embeds = build_embeds(data)
+    except Exception as e:
+        tb = _tb.format_exc()
+        print(f"[지표] embed 생성 오류:\n{tb}")
+        await interaction.followup.send(f"❌ embed 생성 실패: {e}\n```{tb[-600:]}```")
+        return
+
+    try:
+        await interaction.followup.send(embeds=embeds)
+    except Exception as e:
+        tb = _tb.format_exc()
+        print(f"[지표] 전송 오류:\n{tb}")
+        await interaction.followup.send(f"❌ 지표 전송 실패: {e}\n```{tb[-600:]}```")
 
 
 if __name__ == "__main__":

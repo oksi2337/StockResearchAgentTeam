@@ -2,6 +2,7 @@
 Technical Analyst — 워치리스트 + Top 20 기술적 분석
 매일 장 마감 후 실행, 결과를 #종목-분석 채널에 전송
 """
+from __future__ import annotations
 import os
 import json
 import asyncio

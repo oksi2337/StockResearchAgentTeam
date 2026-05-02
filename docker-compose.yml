@@ -1,0 +1,17 @@
+services:
+  stock-bot:
+    build:
+      context: .
+      network: host
+    container_name: stock-bot
+    restart: unless-stopped
+    env_file: .env
+    network_mode: host
+    volumes:
+      - ./data:/app/data
+      - ./scripts:/app/scripts
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"

@@ -80,7 +80,7 @@ def run_research(company: str, ticker: str) -> dict | None:
     full_text = ""
 
     with client.messages.stream(
-        model="claude-sonnet-4-5",
+        model="claude-sonnet-4-6",
         max_tokens=4096,
         system=SYSTEM_PROMPT,
         tools=[{"type": "web_search_20250305", "name": "web_search"}],
@@ -193,7 +193,7 @@ async def analyze(company: str, ticker: str):
     """심층 분석 실행 및 Discord 전송"""
     await send_message(CH_STOCK_ANALYSIS, content=f"🔍 **{company} ({ticker})** 심층 분석 시작... (1~2분 소요)")
 
-    loop = asyncio.get_event_loop()
+    loop = asyncio.get_running_loop()
     data = await loop.run_in_executor(None, run_research, company, ticker)
 
     if not data:

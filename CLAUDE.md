@@ -20,9 +20,11 @@ python scripts/korean_market_report.py             # 국장 마감 리포트 단
 python scripts/technical_analyst.py AAPL TSLA      # 특정 종목 기술적 분석
 python scripts/deep_analyst.py "NVIDIA" NVDA       # 특정 종목 심층 분석
 python scripts/kr_stocks.py                        # 종목명 → 티커 변환 테스트
+python scripts/market_indicators.py               # 시장 지표 수집 테스트 (지표 커맨드용)
 ```
 
 `.env.example`을 `.env`로 복사 후 `ANTHROPIC_API_KEY`, `DISCORD_BOT_TOKEN` 설정 필요.
+`FRED_API_KEY` (선택): TIPS 실질금리·HY 스프레드 포함 시 필요. https://fred.stlouisfed.org/docs/api/api_key.html 에서 무료 발급.
 
 **Windows Task Scheduler (자동 실행)**
 - `StockResearch_KoreanMarket` — 매일 15:30 국장 마감 리포트
@@ -96,6 +98,7 @@ Full-stack TypeScript: React+Vite 프론트엔드, Express 백엔드, `data/` �
 | `/워치리스트` | — | 현재 목록 조회 |
 | `/분석 NVDA` | 종목명 또는 티커 | 기술적 분석 (10~20초) |
 | `/심층분석 현대차` | 종목명 또는 티커 | Claude 심층 분석 (1~2분) |
+| `/지표` | — | 글로벌·한국 시장 지표 현황 |
 
 슬래시 커맨드는 MESSAGE CONTENT INTENT 없이도 작동함 (봇 설정에서 별도 인텐트 불필요).
 

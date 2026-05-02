@@ -2,6 +2,7 @@
 Market Watcher — 매일 장 마감 후 실행
 Top 20 시총 + 워치리스트 감시, 순위 변동 감지, Discord 전송
 """
+from __future__ import annotations
 import os
 import json
 import asyncio
