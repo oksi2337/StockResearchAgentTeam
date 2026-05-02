@@ -2,6 +2,7 @@
 한국 종목명 → 티커 변환 유틸
 FinanceDataReader로 KOSPI/KOSDAQ 전체 목록을 캐싱, 이름으로 티커 검색
 """
+from __future__ import annotations
 import json
 import re
 from datetime import datetime, timedelta
