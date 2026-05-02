@@ -11,7 +11,6 @@ sys.path.insert(0, str(Path(__file__).parent))
 
 async def main():
     from market_watcher import run as run_watcher
-    from technical_analyst import run as run_technical
     from sector_analyst import run as run_sector
 
     print("=" * 50)
@@ -22,9 +21,6 @@ async def main():
     await asyncio.sleep(2)
 
     await run_sector()
-    await asyncio.sleep(2)
-
-    await run_technical()
 
     print("=" * 50)
     print("일간 리서치 완료")
