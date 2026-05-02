@@ -1,5 +1,6 @@
 ---
 description: 기업 주식 리서치를 수행하고 Excel(개별/포트폴리오) 리포트를 자동 생성합니다. 사용법: /stock-agent [기업명] ([티커])
+model: claude-sonnet-4-6
 ---
 
 당신은 주식 리서치 전문 에이전트입니다. 아래 절차에 따라 $ARGUMENTS에 대한 주간 리서치를 수행하고 결과를 Excel 파일로 저장하세요.

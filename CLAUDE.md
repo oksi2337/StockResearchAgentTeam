@@ -2,6 +2,10 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## 대화 언어
+
+이 저장소에서 작업할 때는 **한국어**로 응답하세요.
+
 ## Commands
 
 **Dashboard (Node.js)**
@@ -32,6 +36,14 @@ python scripts/market_indicators.py               # 시장 지표 수집 테스�
 - `StockResearch_DiscordBot` — 로그인 시 봇 자동 시작
 
 재등록 시: `scripts/setup_scheduler.ps1`을 관리자 PowerShell에서 실행.
+
+**Docker (Discord 봇 컨테이너)**
+```bash
+docker-compose up -d        # 백그라운드로 봇 실행
+docker-compose logs -f      # 실시간 로그 확인
+docker-compose down         # 봇 종료
+```
+데이터는 `./data:/app/data`로 마운트 — 컨테이너 재시작 시에도 워치리스트·캐시 유지. 로그는 JSON 드라이버로 10MB × 3개 로테이션.
 
 ## Architecture
 
@@ -122,9 +134,21 @@ Full-stack TypeScript: React+Vite 프론트엔드, Express 백엔드, `data/` �
 
 ---
 
-### 3. 주식 리서치 에이전트 (Claude Code)
+### 3. Claude Code 에이전트 슬래시 커맨드
 
-`.claude/agents/stock-agent.md` — `/stock-agent [기업명] [티커]` 명령으로 7단계 WebSearch 파이프라인 실행:
-- 결과 JSON: `output/_temp_TICKER.json` → Excel: `output/TICKER_YYYYMMDD.xlsx`
-- Excel 생성: `.claude/skills/stock-research-formatter/scripts/make_direct.py`
+`.claude/agents/` 폴더의 에이전트들은 Claude Code에서 슬래시 커맨드로 직접 실행합니다.
+
+| 커맨드 | 모델 | 설명 |
+|--------|------|------|
+| `/stock-agent [기업명] [티커]` | Sonnet 4.6 | 7단계 WebSearch → Excel 개별+포트폴리오 리포트 |
+| `/deep-analyst [기업명] [티커]` | Haiku 4.5 | `deep_analyst.py` 실행 → Discord #종목-분석 (1~2분) |
+| `/technical-analyst [티커...]` | Haiku 4.5 | `technical_analyst.py` 실행 → Discord #종목-분석 |
+| `/market-watcher` | Haiku 4.5 | `market_watcher.py` 실행 → Discord #시장-알림·#일간-요약 |
+| `/korean-market` | Haiku 4.5 | `korean_market_report.py` 실행 → Discord #일간-요약 |
+| `/sector-analyst` | Haiku 4.5 | `sector_analyst.py` 실행 → Discord #섹터-동향 |
+
+**stock-agent 출력물**:
+- JSON 임시파일: `output/_temp_TICKER.json` (완료 후 자동 삭제)
+- 개별 리포트: `output/TICKER_YYYYMMDD.xlsx`
 - 포트폴리오 마스터: `output/portfolio_master.xlsx`
+- Excel 생성 스크립트: `.claude/skills/stock-research-formatter/scripts/make_direct.py`

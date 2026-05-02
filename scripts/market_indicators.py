@@ -20,33 +20,63 @@ SYMBOL_TO_ID = {
 }
 
 
-def _fetch_yahoo() -> dict:
+def _fetch_yahoo_bulk() -> dict:
+    """yf.download 배치 수집. 실패 시 빈 dict 반환."""
     symbols = list(SYMBOL_TO_ID.keys())
+    raw = yf.download(symbols, period="10d", auto_adjust=True, progress=False)
+    if raw.empty:
+        raise ValueError("빈 DataFrame 반환")
+    if hasattr(raw.columns, "levels"):
+        close = raw["Close"] if "Close" in raw.columns.get_level_values(0) else raw
+    else:
+        close = raw["Close"] if "Close" in raw.columns else raw
+    out = {}
+    for symbol, id_ in SYMBOL_TO_ID.items():
+        if not hasattr(close, "columns") or symbol not in close.columns:
+            print(f"[야후] {symbol} 컬럼 없음")
+            continue
+        series = close[symbol].dropna()
+        if len(series) < 2:
+            print(f"[야후] {symbol} 데이터 부족 ({len(series)}행)")
+            continue
+        curr = float(series.iloc[-1])
+        prev = float(series.iloc[-2])
+        change_pct = (curr - prev) / prev * 100 if prev else 0
+        out[id_] = {"value": curr, "change": curr - prev, "change_pct": change_pct}
+    return out
+
+
+def _fetch_yahoo_single(symbol: str, id_: str) -> tuple[str, dict] | None:
+    """단일 종목 수집 (배치 실패 시 폴백)."""
     try:
-        raw = yf.download(symbols, period="5d", auto_adjust=True, progress=False)
-        # yfinance 0.2.x: MultiIndex일 때 Close 서브셋, 아니면 단순 컬럼
-        if hasattr(raw.columns, "levels"):
-            close = raw["Close"] if "Close" in raw.columns.get_level_values(0) else raw
-        else:
-            close = raw["Close"] if "Close" in raw.columns else raw
-        out = {}
-        for symbol, id_ in SYMBOL_TO_ID.items():
-            try:
-                if not hasattr(close, "columns"):
-                    continue
-                series = close[symbol].dropna() if symbol in close.columns else None
-                if series is None or len(series) < 2:
-                    continue
-                curr = float(series.iloc[-1])
-                prev = float(series.iloc[-2])
-                change_pct = (curr - prev) / prev * 100 if prev else 0
-                out[id_] = {"value": curr, "change": curr - prev, "change_pct": change_pct}
-            except Exception:
-                pass
-        return out
+        ticker = yf.Ticker(symbol)
+        hist = ticker.history(period="10d", auto_adjust=True)
+        if hist.empty or len(hist) < 2:
+            return None
+        curr = float(hist["Close"].iloc[-1])
+        prev = float(hist["Close"].iloc[-2])
+        change_pct = (curr - prev) / prev * 100 if prev else 0
+        return id_, {"value": curr, "change": curr - prev, "change_pct": change_pct}
     except Exception as e:
-        print(f"[야후] 수집 실패: {e}")
-        return {}
+        print(f"[야후 단일] {symbol} 실패: {e}")
+        return None
+
+
+def _fetch_yahoo() -> dict:
+    try:
+        out = _fetch_yahoo_bulk()
+        if out:
+            return out
+        print("[야후] 배치 수집 결과 없음 → 단일 수집으로 전환")
+    except Exception as e:
+        print(f"[야후] 배치 수집 실패: {e} → 단일 수집으로 전환")
+
+    out = {}
+    for symbol, id_ in SYMBOL_TO_ID.items():
+        result = _fetch_yahoo_single(symbol, id_)
+        if result:
+            out[result[0]] = result[1]
+    return out
 
 
 def _fetch_fear_greed() -> dict | None:
