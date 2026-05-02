@@ -117,7 +117,11 @@ async def run():
         prev_sectors = aggregate_sectors(previous)
         flows = compare_sector_flows(curr_sectors, prev_sectors)
     else:
-        flows = {s: {**v, "cap_change": 0, "cap_change_pct": 0} for s, v in curr_sectors.items()}
+        # 전일 데이터 없을 때: 종목별 change_1d_pct로 섹터 흐름 추정
+        flows = {
+            s: {**v, "cap_change": v["total_cap"] * v["avg_change"] / 100, "cap_change_pct": v["avg_change"]}
+            for s, v in curr_sectors.items()
+        }
 
     total_cap = sum(v["total_cap"] for v in curr_sectors.values())
 
