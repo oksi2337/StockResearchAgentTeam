@@ -1,6 +1,8 @@
 from __future__ import annotations
 import os
 import traceback
+import asyncio
+import aiohttp
 import discord
 import requests
 import yfinance as yf
@@ -285,6 +287,38 @@ def build_embeds(data: dict) -> list[discord.Embed]:
     e3.set_footer(text=f"수집: {ts.strftime('%Y-%m-%d %H:%M')} KST  |  {sources}")
 
     return [e1, e2, e3]
+
+
+async def _send_embeds(channel_id: int, embeds: list[discord.Embed]) -> None:
+    token = os.getenv("DISCORD_BOT_TOKEN")
+    headers = {"Authorization": f"Bot {token}", "Content-Type": "application/json"}
+    payload = {"embeds": [e.to_dict() for e in embeds]}
+    async with aiohttp.ClientSession() as session:
+        async with session.post(
+            f"https://discord.com/api/v10/channels/{channel_id}/messages",
+            headers=headers,
+            json=payload,
+        ) as resp:
+            if resp.status not in (200, 201):
+                print(f"[Discord 지표] 전송 실패: {resp.status}")
+
+
+async def run_global() -> None:
+    """글로벌 지수·변동성·금리·통화·원자재 Embed 1~2 → #일간-요약 (매일 07:00)"""
+    ch = int(os.getenv("DISCORD_CH_DAILY_SUMMARY"))
+    data = fetch_all()
+    embeds = build_embeds(data)
+    await _send_embeds(ch, embeds[:2])
+    print("[지표] 글로벌 지수·금리·통화·원자재 전송 완료")
+
+
+async def run_korea() -> None:
+    """한국 시장 지표 Embed 3 → #일간-요약 (매일 15:30)"""
+    ch = int(os.getenv("DISCORD_CH_DAILY_SUMMARY"))
+    data = fetch_all()
+    embeds = build_embeds(data)
+    await _send_embeds(ch, embeds[2:])
+    print("[지표] 한국 시장 지표 전송 완료")
 
 
 if __name__ == "__main__":

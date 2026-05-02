@@ -31,8 +31,8 @@ python scripts/market_indicators.py               # 시장 지표 수집 테스�
 `FRED_API_KEY` (선택): TIPS 실질금리·HY 스프레드 포함 시 필요. https://fred.stlouisfed.org/docs/api/api_key.html 에서 무료 발급.
 
 **Windows Task Scheduler (자동 실행)**
-- `StockResearch_KoreanMarket` — 매일 15:30 국장 마감 리포트
-- `StockResearch_DailyReport` — 매일 06:30 미장 마감 전체 리포트
+- `StockResearch_DailyReport` — 매일 07:00 글로벌 지표 + 시장 감시 + 섹터 분석
+- `StockResearch_KoreanMarket` — 매일 15:30 국장 마감 리포트 + 한국 시장 지표
 - `StockResearch_DiscordBot` — 로그인 시 봇 자동 시작
 
 재등록 시: `scripts/setup_scheduler.ps1`을 관리자 PowerShell에서 실행.

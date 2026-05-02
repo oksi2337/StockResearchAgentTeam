@@ -12,10 +12,14 @@ sys.path.insert(0, str(Path(__file__).parent))
 async def main():
     from market_watcher import run as run_watcher
     from sector_analyst import run as run_sector
+    from market_indicators import run_global as run_indicators_global
 
     print("=" * 50)
     print("일간 리서치 에이전트 팀 시작")
     print("=" * 50)
+
+    await run_indicators_global()
+    await asyncio.sleep(2)
 
     await run_watcher()
     await asyncio.sleep(2)

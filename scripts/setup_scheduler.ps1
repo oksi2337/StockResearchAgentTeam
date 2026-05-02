@@ -10,7 +10,7 @@ $action1 = New-ScheduledTaskAction `
     -Argument "run_daily.py" `
     -WorkingDirectory $ScriptDir
 
-$trigger1 = New-ScheduledTaskTrigger -Daily -At "06:30AM"
+$trigger1 = New-ScheduledTaskTrigger -Daily -At "07:00AM"
 
 $settings1 = New-ScheduledTaskSettingsSet `
     -ExecutionTimeLimit (New-TimeSpan -Hours 1) `
@@ -21,11 +21,11 @@ Register-ScheduledTask `
     -Action $action1 `
     -Trigger $trigger1 `
     -Settings $settings1 `
-    -Description "매일 오전 6:30 미장 마감 후 시장 감시 + 기술적 분석 + 섹터 분석 실행" `
+    -Description "매일 오전 7:00 미장 마감 후 글로벌 지표 + 시장 감시 + 섹터 분석 실행" `
     -RunLevel Highest `
     -Force
 
-Write-Host "[완료] StockResearch_DailyReport 등록됨 (매일 06:30)" -ForegroundColor Green
+Write-Host "[완료] StockResearch_DailyReport 등록됨 (매일 07:00)" -ForegroundColor Green
 
 # ── Task 2: Discord 봇 (부팅 시 자동 시작)
 $action2 = New-ScheduledTaskAction `

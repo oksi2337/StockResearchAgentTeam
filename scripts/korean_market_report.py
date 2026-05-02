@@ -212,6 +212,10 @@ async def run():
 
     print(f"[국장 리포트] 완료: KOSPI 상위 {len(kospi_top)}개 + 워치리스트 {len(watchlist_lines)}개, 알림 {len(alerts)}건")
 
+    # 8. 한국 시장 지표 (코스피·코스닥 지수 + 등락 종목수)
+    from market_indicators import run_korea as run_indicators_korea
+    await run_indicators_korea()
+
 
 if __name__ == "__main__":
     asyncio.run(run())
