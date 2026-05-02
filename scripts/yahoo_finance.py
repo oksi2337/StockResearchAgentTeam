@@ -111,6 +111,30 @@ def get_fundamentals(ticker: str) -> Optional[dict]:
         return None
 
 
+def get_intraday_change(ticker: str) -> Optional[dict]:
+    """현재가 vs 전일 종가 변화율 (실시간 polling용)"""
+    try:
+        fi = yf.Ticker(ticker).fast_info
+        current = getattr(fi, "last_price", None)
+        prev_close = getattr(fi, "previous_close", None)
+        if current and prev_close and prev_close > 0:
+            change_pct = (current - prev_close) / prev_close * 100
+            return {"ticker": ticker, "current_price": round(current, 2), "change_pct": round(change_pct, 2)}
+    except Exception:
+        pass
+
+    # fast_info 실패 시 일별 데이터로 폴백
+    df = get_price_data(ticker, period="5d")
+    if df is None or len(df) < 2:
+        return None
+    close = df["Close"]
+    current = float(close.iloc[-1])
+    prev = float(close.iloc[-2])
+    if prev <= 0:
+        return None
+    return {"ticker": ticker, "current_price": round(current, 2), "change_pct": round((current - prev) / prev * 100, 2)}
+
+
 def check_alerts(ticker: str, threshold_pct: float = 5.0) -> Optional[dict]:
     """가격 급변 감지"""
     df = get_price_data(ticker, period="5d")

@@ -10,6 +10,9 @@ from dotenv import load_dotenv
 KST = timezone(timedelta(hours=9))
 DAILY_INDICATOR_TIME = time(hour=7, minute=0, tzinfo=KST)
 
+ALERT_THRESHOLD_PCT = 5.0
+_alerted: dict[str, set] = {}  # {날짜: {당일 알림 완료 티커}}
+
 load_dotenv(dotenv_path=os.path.join(os.path.dirname(__file__), "..", ".env"))
 
 TOKEN = os.getenv("DISCORD_BOT_TOKEN")
@@ -56,6 +59,74 @@ async def daily_indicators():
         print(f"[일일 지표] 전송 실패: {e}")
 
 
+def _market_open_now() -> bool:
+    """현재 한국장(09:00~15:30) 또는 미국장(22:00~06:00) 중 하나라도 열려있으면 True"""
+    now = datetime.now(KST)
+    if now.weekday() >= 5:
+        return False
+    t = now.hour * 60 + now.minute
+    krx = 9 * 60 <= t <= 15 * 60 + 30
+    us = t >= 22 * 60 or t < 6 * 60
+    return krx or us
+
+
+@tasks.loop(minutes=20)
+async def realtime_watchlist_alert():
+    if not _market_open_now():
+        return
+
+    today = datetime.now(KST).date().isoformat()
+    if today not in _alerted:
+        _alerted.clear()
+        _alerted[today] = set()
+    alerted_today = _alerted[today]
+
+    try:
+        stocks = load_watchlist()
+    except Exception as e:
+        print(f"[실시간알림] 워치리스트 로드 실패: {e}")
+        return
+
+    loop = asyncio.get_running_loop()
+    new_alerts = []
+
+    for stock in stocks:
+        ticker = stock["ticker"]
+        if ticker in alerted_today:
+            continue
+        try:
+            from yahoo_finance import get_intraday_change
+            result = await loop.run_in_executor(None, get_intraday_change, ticker)
+            if result and abs(result["change_pct"]) >= ALERT_THRESHOLD_PCT:
+                new_alerts.append({**result, "name": stock.get("name", ticker)})
+                alerted_today.add(ticker)
+        except Exception as e:
+            print(f"[실시간알림] {ticker} 처리 오류: {e}")
+
+    if new_alerts:
+        channel = bot.get_channel(CH_MARKET_ALERT)
+        if not channel:
+            return
+        lines = []
+        for a in new_alerts:
+            emoji = "🚀" if a["change_pct"] > 0 else "💥"
+            lines.append(f"{emoji} **{a['name']}** (`{a['ticker']}`) {a['change_pct']:+.2f}% — {a['current_price']:,.2f}")
+        embed = discord.Embed(
+            title="⚡ 워치리스트 실시간 급변",
+            description="\n".join(lines),
+            color=0xff6b35,
+            timestamp=datetime.now(KST),
+        )
+        embed.set_footer(text=f"전일 종가 대비 ±{ALERT_THRESHOLD_PCT}% 이상  |  20분 주기 감시")
+        await channel.send(embed=embed)
+        print(f"[실시간알림] {len(new_alerts)}건 전송: {[a['ticker'] for a in new_alerts]}")
+
+
+@realtime_watchlist_alert.before_loop
+async def before_realtime_alert():
+    await bot.wait_until_ready()
+
+
 # ── 봇 이벤트 ───────────────────────────────────────────────
 @bot.event
 async def on_ready():
@@ -68,6 +139,8 @@ async def on_ready():
         print(f"[슬래시 커맨드] 동기화 실패: {e}")
     daily_indicators.start()
     print(f"[일일 지표] 매일 07:00 KST 자동 전송 예약됨")
+    realtime_watchlist_alert.start()
+    print(f"[실시간알림] 장중 20분 주기 워치리스트 감시 시작 (±{ALERT_THRESHOLD_PCT}%)")
 
 
 # ── 자연어 메시지 처리 ───────────────────────────────────────
