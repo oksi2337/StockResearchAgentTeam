@@ -32,10 +32,11 @@ python scripts/market_indicators.py               # 시장 지표 수집 테스�
 
 **Windows Task Scheduler (자동 실행)**
 - `StockResearch_DailyReport` — 매일 07:00 글로벌 지표 + 시장 감시 + 섹터 분석
-- `StockResearch_KoreanMarket` — 매일 15:30 국장 마감 리포트 + 한국 시장 지표
+- `StockResearch_KoreanMarket` — 매일 15:31 국장 마감 리포트 + 한국 시장 지표
 - `StockResearch_DiscordBot` — 로그인 시 봇 자동 시작
 
 재등록 시: `scripts/setup_scheduler.ps1`을 관리자 PowerShell에서 실행.
+봇 재시작 (PowerShell): `schtasks /End /TN "StockResearch_DiscordBot"` → `schtasks /Run /TN "StockResearch_DiscordBot"`
 
 **Docker (Discord 봇 컨테이너)**
 ```bash
@@ -86,19 +87,32 @@ Full-stack TypeScript: React+Vite 프론트엔드, Express 백엔드, `data/` �
 
 `scripts/` 아래 Python 스크립트들이 Discord 봇과 자동 리포트를 담당.
 
+**자동 발송 스케줄**
+
+| 시각 | 실행 주체 | 내용 | 채널 |
+|------|-----------|------|------|
+| 07:00 | Task Scheduler → `run_daily.py` | 글로벌 지수·변동성 + 금리·통화·원자재 | #일간-요약 |
+| 07:00 | Task Scheduler → `run_daily.py` | 시총 Top 20 일간 요약 | #일간-요약 |
+| 07:00 | Task Scheduler → `run_daily.py` | Top 10 순위변동 감지 (변동 시만) | #시장-알림 |
+| 07:00 | Task Scheduler → `run_daily.py` | 워치리스트 급변 ±5% (있을 때만) | #시장-알림 |
+| 07:00 | Task Scheduler → `run_daily.py` | 섹터별 자금흐름 | #섹터-동향 |
+| 장중 20분 주기 | Discord 봇 내부 | 워치리스트 전체 + KOSPI 상위 20 급변 ±5% (평일, 한국장 09:00~15:30 / 미국장 22:00~06:00) | #시장-알림 |
+| 15:31 | Task Scheduler → `korean_market_report.py` | 국장 마감 리포트 (KOSPI 상위 20 + 워치리스트 한국 종목) + 한국 시장 지표 | #일간-요약 |
+
 **에이전트 흐름**
 
 ```
 [Task Scheduler 자동 / Discord 슬래시 커맨드]
          ↓
-  market_watcher.py      — Top 20 순위변동 감지 → #시장-알림, #일간-요약
-  korean_market_report.py — KOSPI 시총 상위 20(실시간) + 워치리스트 → #일간-요약
-  sector_analyst.py      — 섹터별 자금흐름 분석 → #섹터-동향
-  technical_analyst.py   — RSI·MACD·이평선·52주 고저 (Yahoo Finance) → #종목-분석
-  deep_analyst.py        — Claude API + web search 심층 분석 → #종목-분석
+  market_watcher.py       — Top 20 순위변동 감지 → #시장-알림, #일간-요약
+  market_indicators.py    — 글로벌·한국 시장 지표 수집 및 전송 (run_global / run_korea)
+  korean_market_report.py — KOSPI 시총 상위 20(실시간) + 워치리스트 → #일간-요약 (15:31)
+  sector_analyst.py       — 섹터별 자금흐름 분석 → #섹터-동향
+  technical_analyst.py    — RSI·MACD·이평선·52주 고저 (Yahoo Finance) → #종목-분석
+  deep_analyst.py         — Claude API + web search 심층 분석 → #종목-분석
          ↑
-  discord_bot.py         — 슬래시 커맨드 수신 및 위 스크립트 트리거
-  kr_stocks.py           — 한국 종목명 → 티커 변환 유틸 (24h 캐시)
+  discord_bot.py          — 슬래시 커맨드 수신 + 장중 20분 주기 실시간 급변 감지
+  kr_stocks.py            — 한국 종목명 → 티커 변환 유틸 (24h 캐시)
 ```
 
 **Discord 슬래시 커맨드**
@@ -129,6 +143,12 @@ Full-stack TypeScript: React+Vite 프론트엔드, Express 백엔드, `data/` �
 | `#섹터-동향` | `DISCORD_CH_SECTOR_TREND` |
 
 **워치리스트**: `data/watchlist.json` — `{ticker, name, added_at}` 배열.
+
+**실시간 급변 감지 (`discord_bot.py` — `realtime_watchlist_alert`)**:
+- 대상: 워치리스트 전체(한국+미국) + KOSPI 시총 상위 20 (한국장 시간에만 추가)
+- 기준: 전일 종가 대비 ±5% (`ALERT_THRESHOLD_PCT = 5.0`)
+- 중복 방지: `_alerted` dict로 당일 알림 완료 티커 추적, 자정 초기화
+- `yahoo_finance.get_intraday_change()` — `fast_info` 우선, 실패 시 5d 일별 데이터로 폴백
 
 **심층 분석 (`deep_analyst.py`)**: `stock-agent.md`와 동일한 7단계 리서치 방식을 Anthropic SDK로 구현. Claude Sonnet + `web_search_20250305` 도구로 주간 성과·주가 사유·경쟁력·밸류에이션·펀더멘털·전망·뉴스·증권사 의견 수집 후 Discord embed 3개(분석·증권사·뉴스)로 전송.
 
