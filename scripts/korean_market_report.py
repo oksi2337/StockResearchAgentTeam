@@ -195,24 +195,9 @@ async def run():
     }
     await send_embed(CH_DAILY_SUMMARY, embed)
 
-    # 7. 급등락 알림 (±3% 이상)
-    alerts = [s for s in stock_results if abs(s["change"]) >= 3.0]
-    if alerts:
-        alert_lines = []
-        for s in alerts:
-            emoji = "🚀" if s["change"] > 0 else "💥"
-            star = "⭐ " if s["is_watchlist"] else ""
-            alert_lines.append(f"{emoji} {star}**{s['name']}** ({s['ticker']}) {s['change']:+.2f}%")
-        await send_embed(CH_MARKET_ALERT, {
-            "title": "⚠️ 국장 급등락 감지",
-            "description": "\n".join(alert_lines),
-            "color": 0xf0e040,
-            "timestamp": datetime.now().isoformat(),
-        })
+    print(f"[국장 리포트] 완료: KOSPI 상위 {len(kospi_top)}개 + 워치리스트 {len(watchlist_lines)}개")
 
-    print(f"[국장 리포트] 완료: KOSPI 상위 {len(kospi_top)}개 + 워치리스트 {len(watchlist_lines)}개, 알림 {len(alerts)}건")
-
-    # 8. 한국 시장 지표 (코스피·코스닥 지수 + 등락 종목수)
+    # 7. 한국 시장 지표 (코스피·코스닥 지수 + 등락 종목수)
     from market_indicators import run_korea as run_indicators_korea
     await run_indicators_korea()
 

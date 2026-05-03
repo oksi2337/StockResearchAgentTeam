@@ -313,7 +313,7 @@ async def run_global() -> None:
 
 
 async def run_korea() -> None:
-    """한국 시장 지표 Embed 3 → #일간-요약 (매일 15:30)"""
+    """한국 시장 지표 Embed 3 → #일간-요약 (매일 15:31, 당일 마감 데이터)"""
     ch = int(os.getenv("DISCORD_CH_DAILY_SUMMARY"))
     data = fetch_all()
     embeds = build_embeds(data)

@@ -51,6 +51,29 @@ Register-ScheduledTask `
     -Force
 
 Write-Host "[완료] StockResearch_DiscordBot 등록됨 (로그인 시 자동시작)" -ForegroundColor Green
+
+# ── Task 3: 국장 마감 리포트 (매일 15:31 — 국장 마감 1분 후)
+$action3 = New-ScheduledTaskAction `
+    -Execute $PythonPath `
+    -Argument "korean_market_report.py" `
+    -WorkingDirectory $ScriptDir
+
+$trigger3 = New-ScheduledTaskTrigger -Daily -At "03:31PM"
+
+$settings3 = New-ScheduledTaskSettingsSet `
+    -ExecutionTimeLimit (New-TimeSpan -Hours 1) `
+    -StartWhenAvailable
+
+Register-ScheduledTask `
+    -TaskName "StockResearch_KoreanMarket" `
+    -Action $action3 `
+    -Trigger $trigger3 `
+    -Settings $settings3 `
+    -Description "매일 15:31 국장 마감 리포트 + 한국 시장 지표 실행" `
+    -RunLevel Highest `
+    -Force
+
+Write-Host "[완료] StockResearch_KoreanMarket 등록됨 (매일 15:31)" -ForegroundColor Green
 Write-Host ""
 Write-Host "등록된 작업 목록:" -ForegroundColor Cyan
 Get-ScheduledTask | Where-Object { $_.TaskName -like "StockResearch_*" } | Format-Table TaskName, State
