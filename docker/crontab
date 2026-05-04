@@ -14,3 +14,9 @@ SHELL=/bin/bash
 
 # 05:00 KST 매일 — 뉴스레터 B (AI 트렌드)
 0 5 * * * cd /app && /usr/local/bin/python scripts/run_newsletter.py B >> /app/logs/newsletter_B.log 2>&1
+
+# 05:59 KST 매일 — 뉴스레터 A Resend 발송
+59 5 * * * cd /app && /usr/local/bin/python scripts/newsletter_send.py A >> /app/logs/newsletter_send_A.log 2>&1
+
+# 06:00 KST 매일 — 뉴스레터 B Resend 발송
+0 6 * * * cd /app && /usr/local/bin/python scripts/newsletter_send.py B >> /app/logs/newsletter_send_B.log 2>&1
