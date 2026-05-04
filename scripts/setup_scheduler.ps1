@@ -81,12 +81,14 @@ $action4 = New-ScheduledTaskAction `
     -Argument "run_newsletter.py A" `
     -WorkingDirectory $ScriptDir
 
-# 월~금만 실행 (요일별 개별 트리거 등록)
-$triggerMon = New-ScheduledTaskTrigger -Weekly -DaysOfWeek Monday    -At "04:00AM"
-$triggerTue = New-ScheduledTaskTrigger -Weekly -DaysOfWeek Tuesday   -At "04:00AM"
-$triggerWed = New-ScheduledTaskTrigger -Weekly -DaysOfWeek Wednesday -At "04:00AM"
-$triggerThu = New-ScheduledTaskTrigger -Weekly -DaysOfWeek Thursday  -At "04:00AM"
-$triggerFri = New-ScheduledTaskTrigger -Weekly -DaysOfWeek Friday    -At "04:00AM"
+# 매일 실행 (요일별 개별 트리거 등록)
+$triggerMon = New-ScheduledTaskTrigger -Weekly -DaysOfWeek Monday    -At "04:50AM"
+$triggerTue = New-ScheduledTaskTrigger -Weekly -DaysOfWeek Tuesday   -At "04:50AM"
+$triggerWed = New-ScheduledTaskTrigger -Weekly -DaysOfWeek Wednesday -At "04:50AM"
+$triggerThu = New-ScheduledTaskTrigger -Weekly -DaysOfWeek Thursday  -At "04:50AM"
+$triggerFri = New-ScheduledTaskTrigger -Weekly -DaysOfWeek Friday    -At "04:50AM"
+$triggerSatA = New-ScheduledTaskTrigger -Weekly -DaysOfWeek Saturday -At "04:50AM"
+$triggerSunA = New-ScheduledTaskTrigger -Weekly -DaysOfWeek Sunday   -At "04:50AM"
 
 $settings4 = New-ScheduledTaskSettingsSet `
     -ExecutionTimeLimit (New-TimeSpan -Hours 2) `
@@ -95,23 +97,27 @@ $settings4 = New-ScheduledTaskSettingsSet `
 Register-ScheduledTask `
     -TaskName "StockResearch_Newsletter_A" `
     -Action $action4 `
-    -Trigger @($triggerMon, $triggerTue, $triggerWed, $triggerThu, $triggerFri) `
+    -Trigger @($triggerMon, $triggerTue, $triggerWed, $triggerThu, $triggerFri, $triggerSatA, $triggerSunA) `
     -Settings $settings4 `
-    -Description "월~금 04:00 뉴스레터 A(글로벌 정치경제) 수집→AI→Notion→Stibee(06:30 발송)" `
+    -Description "매일 04:50 뉴스레터 A(글로벌 정치경제) 수집→AI→Notion→Stibee(06:30 발송)" `
     -RunLevel Highest `
     -Force
 
-Write-Host "[완료] StockResearch_Newsletter_A 등록됨 (월~금 04:00)" -ForegroundColor Green
+Write-Host "[완료] StockResearch_Newsletter_A 등록됨 (매일 04:50)" -ForegroundColor Green
 
-# ── Task 5: 뉴스레터 B (화·목·토 04:30 — 07:00 발송 준비)
+# ── Task 5: 뉴스레터 B (매일 05:00 — 07:00 발송 준비)
 $action5 = New-ScheduledTaskAction `
     -Execute $PythonPath `
     -Argument "run_newsletter.py B" `
     -WorkingDirectory $ScriptDir
 
-$triggerTue2 = New-ScheduledTaskTrigger -Weekly -DaysOfWeek Tuesday  -At "04:30AM"
-$triggerThu2 = New-ScheduledTaskTrigger -Weekly -DaysOfWeek Thursday -At "04:30AM"
-$triggerSat  = New-ScheduledTaskTrigger -Weekly -DaysOfWeek Saturday -At "04:30AM"
+$triggerMon2 = New-ScheduledTaskTrigger -Weekly -DaysOfWeek Monday    -At "05:00AM"
+$triggerTue2 = New-ScheduledTaskTrigger -Weekly -DaysOfWeek Tuesday   -At "05:00AM"
+$triggerWed2 = New-ScheduledTaskTrigger -Weekly -DaysOfWeek Wednesday -At "05:00AM"
+$triggerThu2 = New-ScheduledTaskTrigger -Weekly -DaysOfWeek Thursday  -At "05:00AM"
+$triggerFri2 = New-ScheduledTaskTrigger -Weekly -DaysOfWeek Friday    -At "05:00AM"
+$triggerSat  = New-ScheduledTaskTrigger -Weekly -DaysOfWeek Saturday  -At "05:00AM"
+$triggerSun  = New-ScheduledTaskTrigger -Weekly -DaysOfWeek Sunday    -At "05:00AM"
 
 $settings5 = New-ScheduledTaskSettingsSet `
     -ExecutionTimeLimit (New-TimeSpan -Hours 2) `
@@ -120,13 +126,13 @@ $settings5 = New-ScheduledTaskSettingsSet `
 Register-ScheduledTask `
     -TaskName "StockResearch_Newsletter_B" `
     -Action $action5 `
-    -Trigger @($triggerTue2, $triggerThu2, $triggerSat) `
+    -Trigger @($triggerMon2, $triggerTue2, $triggerWed2, $triggerThu2, $triggerFri2, $triggerSat, $triggerSun) `
     -Settings $settings5 `
-    -Description "화·목·토 04:30 뉴스레터 B(AI 트렌드) 수집→AI→Notion→Stibee(07:00 발송)" `
+    -Description "매일 05:00 뉴스레터 B(AI 트렌드) 수집→AI→Notion→Stibee(07:00 발송)" `
     -RunLevel Highest `
     -Force
 
-Write-Host "[완료] StockResearch_Newsletter_B 등록됨 (화·목·토 04:30)" -ForegroundColor Green
+Write-Host "[완료] StockResearch_Newsletter_B 등록됨 (매일 05:00)" -ForegroundColor Green
 
 Write-Host ""
 Write-Host "등록된 작업 목록:" -ForegroundColor Cyan

@@ -56,8 +56,8 @@ python scripts/run_newsletter.py B    # 뉴스레터 B 파이프라인 (수집�
 - `StockResearch_DailyReport` — 매일 07:00 글로벌 지표 + 시장 감시 + 섹터 분석
 - `StockResearch_KoreanMarket` — 매일 16:00 국장 마감 리포트 + 한국 시장 지표
 - `StockResearch_DiscordBot` — 로그인 시 봇 자동 시작
-- `StockResearch_Newsletter_A` — 월~금 04:00 뉴스레터 A 파이프라인
-- `StockResearch_Newsletter_B` — 화·목·토 04:30 뉴스레터 B 파이프라인
+- `StockResearch_Newsletter_A` — 매일 04:50 뉴스레터 A 파이프라인
+- `StockResearch_Newsletter_B` — 매일 05:00 뉴스레터 B 파이프라인
 
 재등록 시: `scripts/setup_scheduler.ps1`을 관리자 PowerShell에서 실행.
 봇 재시작 (PowerShell): `schtasks /End /TN "StockResearch_DiscordBot"` → `schtasks /Run /TN "StockResearch_DiscordBot"`

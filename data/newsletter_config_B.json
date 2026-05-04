@@ -6,8 +6,10 @@
     "days": ["tue", "thu", "sat"],
     "pipeline_hour": 4,
     "pipeline_minute": 30,
-    "send_time": "07:00"
+    "send_time": "06:00"
   },
+  "sender_email": "oksi2337-gmail.com@send.stibee.com",
+  "sender_name": "주키로그",
   "stibee_list_id_env": "STIBEE_LIST_ID_B",
   "notion_database_id_env": "NOTION_DATABASE_ID_B",
   "market_tickers": {},

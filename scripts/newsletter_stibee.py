@@ -121,18 +121,21 @@ def _get_list_id(config: dict) -> str:
     return list_id
 
 
-def create_campaign(list_id: str, subject: str, html_content: str, send_time: str) -> str:
+def create_campaign(list_id: str, subject: str, html_content: str, send_time: str,
+                    sender_email: str = "", sender_name: str = "") -> str:
     """Stibee API로 캠페인 생성. 캠페인 ID 반환."""
     headers = {
         "AccessToken": STIBEE_API_KEY,
         "Content-Type": "application/json",
     }
     payload = {
-        "addressBookId": list_id,
+        "listId": int(list_id),
         "subject": subject,
         "contents": html_content,
         "sendType": "scheduled",
         "scheduledAt": send_time,
+        "senderEmail": sender_email,
+        "senderName": sender_name,
     }
     resp = requests.post(
         f"{STIBEE_API}/emails",
@@ -195,11 +198,12 @@ def run(newsletter_id: str, dry_run: bool = False) -> None:
         return
 
     list_id = _get_list_id(config)
+    sender_email = config.get("sender_email", os.getenv("STIBEE_SENDER_EMAIL", ""))
+    sender_name = config.get("sender_name", "")
     for attempt in range(1, 4):
         try:
-            campaign_id = create_campaign(list_id, subject, html, send_datetime)
+            campaign_id = create_campaign(list_id, subject, html, send_datetime, sender_email, sender_name)
             time.sleep(1)
-            # schedule_send(campaign_id)  # [수동 검수] 발송은 Stibee에서 수동으로
             print(f"[Stibee] 캠페인 생성 완료 - ID: {campaign_id}")
             return
         except Exception as e:
