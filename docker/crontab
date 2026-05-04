@@ -1,0 +1,10 @@
+SHELL=/bin/bash
+
+# TZ=Asia/Seoul 은 docker-compose에서 컨테이너 전체에 적용됨
+# 따라서 아래 시각은 KST 기준
+
+# 07:00 KST — 글로벌 지표 + 시장 요약 + 섹터 분석
+0 7 * * * /usr/local/bin/python /app/scripts/run_daily.py >> /app/logs/daily.log 2>&1
+
+# 16:00 KST — 국장 마감 리포트 + 한국 시장 지표 (Yahoo Finance 종가 반영 대기 포함)
+0 16 * * * /usr/local/bin/python /app/scripts/korean_market_report.py >> /app/logs/korean.log 2>&1

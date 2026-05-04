@@ -58,7 +58,7 @@ $action3 = New-ScheduledTaskAction `
     -Argument "korean_market_report.py" `
     -WorkingDirectory $ScriptDir
 
-$trigger3 = New-ScheduledTaskTrigger -Daily -At "03:31PM"
+$trigger3 = New-ScheduledTaskTrigger -Daily -At "04:00PM"
 
 $settings3 = New-ScheduledTaskSettingsSet `
     -ExecutionTimeLimit (New-TimeSpan -Hours 1) `
@@ -69,11 +69,11 @@ Register-ScheduledTask `
     -Action $action3 `
     -Trigger $trigger3 `
     -Settings $settings3 `
-    -Description "매일 15:31 국장 마감 리포트 + 한국 시장 지표 실행" `
+    -Description "매일 16:00 국장 마감 리포트 + 한국 시장 지표 실행 (Yahoo Finance 종가 반영 대기)" `
     -RunLevel Highest `
     -Force
 
-Write-Host "[완료] StockResearch_KoreanMarket 등록됨 (매일 15:31)" -ForegroundColor Green
+Write-Host "[완료] StockResearch_KoreanMarket 등록됨 (매일 16:00)" -ForegroundColor Green
 
 # ── Task 4: 뉴스레터 A (월~금 04:00 — 06:30 발송 준비)
 $action4 = New-ScheduledTaskAction `

@@ -1,5 +1,6 @@
 """
-Korean Market Report — 매일 오후 3:30 (국장 마감 후) 실행
+Korean Market Report — 매일 16:00 (국장 마감 30분 후) 실행
+Yahoo Finance는 마감 후 즉시 갱신되지 않으므로 당일 종가 반영까지 대기 후 수집.
 KOSPI 시총 상위 20 (실시간) + 워치리스트 종목 분석 → #일간-요약 채널 전송
 """
 from __future__ import annotations
@@ -9,7 +10,7 @@ import asyncio
 import aiohttp
 import yfinance as yf
 import FinanceDataReader as fdr
-from datetime import datetime
+from datetime import datetime, timezone, timedelta
 from pathlib import Path
 from dotenv import load_dotenv
 
@@ -96,6 +97,40 @@ def get_stock_data(ticker: str) -> dict | None:
         return None
 
 
+KST = timezone(timedelta(hours=9))
+_MAX_WAIT_MINUTES = 20
+_RETRY_INTERVAL_SEC = 180  # 3분
+
+
+def wait_for_today_data(max_minutes: int = _MAX_WAIT_MINUTES) -> bool:
+    """Yahoo Finance에 오늘 종가가 반영될 때까지 최대 max_minutes분 대기.
+    True: 오늘 데이터 확인됨, False: 타임아웃(그냥 실행)."""
+    today = datetime.now(KST).date()
+    deadline = datetime.now(KST).timestamp() + max_minutes * 60
+    attempt = 0
+    while True:
+        attempt += 1
+        try:
+            hist = yf.Ticker("^KS11").history(period="5d")
+            if not hist.empty:
+                last = hist.index[-1]
+                if hasattr(last, "tzinfo") and last.tzinfo:
+                    last_date = last.astimezone(KST).date()
+                else:
+                    last_date = last.date()
+                if last_date == today:
+                    print(f"[국장 리포트] 오늘 종가 확인됨 (시도 {attempt}회)")
+                    return True
+                print(f"[국장 리포트] 최신 날짜={last_date}, 오늘={today} → {_RETRY_INTERVAL_SEC//60}분 후 재시도 ({attempt}회)")
+        except Exception as e:
+            print(f"[국장 리포트] 데이터 확인 실패: {e}")
+        if datetime.now(KST).timestamp() >= deadline:
+            print(f"[국장 리포트] {max_minutes}분 초과 — 현재 데이터로 그냥 실행")
+            return False
+        import time
+        time.sleep(_RETRY_INTERVAL_SEC)
+
+
 def fmt_krw(val: float) -> str:
     return f"{val:,.0f}원"
 
@@ -115,13 +150,16 @@ def load_watchlist_kr() -> dict:
 
 async def run():
     from yahoo_finance import is_korean_market_open
+    loop = asyncio.get_running_loop()
+    # 15:30 마감 직후에는 Yahoo Finance 데이터가 미갱신일 수 있으므로 오늘 종가가 나올 때까지 대기
+    await loop.run_in_executor(None, wait_for_today_data)
+
     if not is_korean_market_open():
         print(f"[국장 리포트] 오늘은 한국 장 휴장일 — 스킵 ({datetime.now().strftime('%Y-%m-%d')})")
         return
 
     print(f"[국장 리포트] 실행 시작: {datetime.now()}")
     today = datetime.now().strftime("%Y-%m-%d")
-    loop = asyncio.get_running_loop()
 
     # 1. 지수 수집
     index_lines = []

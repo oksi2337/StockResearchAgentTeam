@@ -54,7 +54,7 @@ python scripts/run_newsletter.py B    # 뉴스레터 B 파이프라인 (수집�
 
 **Windows Task Scheduler (자동 실행)**
 - `StockResearch_DailyReport` — 매일 07:00 글로벌 지표 + 시장 감시 + 섹터 분석
-- `StockResearch_KoreanMarket` — 매일 15:31 국장 마감 리포트 + 한국 시장 지표
+- `StockResearch_KoreanMarket` — 매일 16:00 국장 마감 리포트 + 한국 시장 지표
 - `StockResearch_DiscordBot` — 로그인 시 봇 자동 시작
 - `StockResearch_Newsletter_A` — 월~금 04:00 뉴스레터 A 파이프라인
 - `StockResearch_Newsletter_B` — 화·목·토 04:30 뉴스레터 B 파이프라인
@@ -128,7 +128,7 @@ Full-stack TypeScript: React+Vite 프론트엔드, Express 백엔드, `data/` �
 | 07:00 | Task Scheduler → `run_daily.py` | 워치리스트 급변 ±5% (있을 때만) | #시장-알림 |
 | 07:00 | Task Scheduler → `run_daily.py` | 섹터별 자금흐름 | #섹터-동향 |
 | 장중 3분 주기 | Discord 봇 내부 | 워치리스트 전체 + KOSPI 상위 20 급변 ±5% (평일, 한국장 09:00~15:30 / 미국장 22:00~06:00) | #시장-알림 |
-| 15:31 | Task Scheduler → `korean_market_report.py` | 국장 마감 리포트 (KOSPI 상위 20 + 워치리스트 한국 종목) + 한국 시장 지표 | #일간-요약 |
+| 16:00 | Task Scheduler → `korean_market_report.py` | 국장 마감 리포트 (KOSPI 상위 20 + 워치리스트 한국 종목) + 한국 시장 지표 | #일간-요약 |
 
 **에이전트 흐름**
 

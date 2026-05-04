@@ -313,7 +313,7 @@ async def run_global() -> None:
 
 
 async def run_korea() -> None:
-    """한국 시장 지표 Embed 3 → #일간-요약 (매일 15:31, 당일 마감 데이터)"""
+    """한국 시장 지표 Embed 3 → #일간-요약 (매일 16:00, 당일 마감 데이터)"""
     import sys
     from pathlib import Path
     sys.path.insert(0, str(Path(__file__).parent))
