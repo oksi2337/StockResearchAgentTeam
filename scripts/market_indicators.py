@@ -314,6 +314,13 @@ async def run_global() -> None:
 
 async def run_korea() -> None:
     """한국 시장 지표 Embed 3 → #일간-요약 (매일 15:31, 당일 마감 데이터)"""
+    import sys
+    from pathlib import Path
+    sys.path.insert(0, str(Path(__file__).parent))
+    from yahoo_finance import is_korean_market_open
+    if not is_korean_market_open():
+        print(f"[지표] 오늘은 한국 장 휴장일 — 한국 시장 지표 스킵")
+        return
     ch = int(os.getenv("DISCORD_CH_DAILY_SUMMARY"))
     data = fetch_all()
     embeds = build_embeds(data)

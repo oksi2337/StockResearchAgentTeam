@@ -1,7 +1,33 @@
 import yfinance as yf
 import pandas as pd
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone, date
 from typing import Optional
+
+KST = timezone(timedelta(hours=9))
+
+
+def is_korean_market_open(today: date | None = None) -> bool:
+    """오늘 KRX 개장 여부 확인 (주말·공휴일 모두 처리).
+
+    주말이면 즉시 False. 평일이면 ^KS11 최근 거래일이 오늘인지로 판단.
+    데이터 수집 실패 시 True 반환(불확실 → 실행 허용).
+    """
+    if today is None:
+        today = datetime.now(KST).date()
+    if today.weekday() >= 5:  # 토=5, 일=6
+        return False
+    try:
+        hist = yf.Ticker("^KS11").history(period="5d")
+        if hist.empty:
+            return True
+        last_idx = hist.index[-1]
+        if hasattr(last_idx, "tzinfo") and last_idx.tzinfo is not None:
+            last_date = last_idx.astimezone(KST).date()
+        else:
+            last_date = last_idx.date()
+        return last_date == today
+    except Exception:
+        return True
 
 
 def get_price_data(ticker: str, period: str = "3mo") -> Optional[pd.DataFrame]:

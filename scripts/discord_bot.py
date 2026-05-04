@@ -6,8 +6,12 @@ import asyncio
 import subprocess
 from datetime import datetime, timezone, timedelta
 from dotenv import load_dotenv
+import pytz
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
+from apscheduler.triggers.cron import CronTrigger
 
 KST = timezone(timedelta(hours=9))
+KST_TZ = pytz.timezone("Asia/Seoul")
 
 ALERT_THRESHOLD_PCT = 5.0
 _alerted: dict[str, set] = {}  # {날짜: {당일 알림 완료 티커}}
@@ -52,7 +56,7 @@ def _market_open_now() -> bool:
     return krx or us
 
 
-@tasks.loop(minutes=20)
+@tasks.loop(minutes=3)
 async def realtime_watchlist_alert():
     if not _market_open_now():
         return
@@ -119,7 +123,7 @@ async def realtime_watchlist_alert():
             color=0xff6b35,
             timestamp=datetime.now(KST),
         )
-        embed.set_footer(text=f"전일 종가 대비 ±{ALERT_THRESHOLD_PCT}%  |  워치리스트 + KOSPI 상위 20  |  20분 주기")
+        embed.set_footer(text=f"전일 종가 대비 ±{ALERT_THRESHOLD_PCT}%  |  워치리스트 + KOSPI 상위 20  |  3분 주기")
         await channel.send(embed=embed)
         print(f"[실시간알림] {len(new_alerts)}건 전송: {[a['ticker'] for a in new_alerts]}")
 
@@ -127,6 +131,27 @@ async def realtime_watchlist_alert():
 @realtime_watchlist_alert.before_loop
 async def before_realtime_alert():
     await bot.wait_until_ready()
+
+
+# ── 정기 스케줄 잡 ──────────────────────────────────────────
+async def scheduled_daily():
+    """매일 07:00 KST — 글로벌 지표 + 시장 요약 + 섹터 분석"""
+    print(f"[스케줄] 일간 리포트 시작: {datetime.now(KST)}")
+    try:
+        from run_daily import main as daily_main
+        await daily_main()
+    except Exception as e:
+        print(f"[스케줄] 일간 리포트 오류: {e}")
+
+
+async def scheduled_korea():
+    """매일 15:31 KST — 국장 마감 리포트"""
+    print(f"[스케줄] 국장 리포트 시작: {datetime.now(KST)}")
+    try:
+        from korean_market_report import run as korea_run
+        await korea_run()
+    except Exception as e:
+        print(f"[스케줄] 국장 리포트 오류: {e}")
 
 
 # ── 봇 이벤트 ───────────────────────────────────────────────
@@ -141,6 +166,12 @@ async def on_ready():
         print(f"[슬래시 커맨드] 동기화 실패: {e}")
     realtime_watchlist_alert.start()
     print(f"[실시간알림] 장중 20분 주기 워치리스트 감시 시작 (±{ALERT_THRESHOLD_PCT}%)")
+
+    scheduler = AsyncIOScheduler(timezone=KST_TZ)
+    scheduler.add_job(scheduled_daily, CronTrigger(hour=7, minute=0, timezone=KST_TZ))
+    scheduler.add_job(scheduled_korea, CronTrigger(hour=15, minute=31, timezone=KST_TZ))
+    scheduler.start()
+    print("[스케줄] 07:00 일간 리포트 / 15:31 국장 리포트 등록 완료 (KST)")
 
 
 # ── 자연어 메시지 처리 ───────────────────────────────────────

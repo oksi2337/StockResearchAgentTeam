@@ -1,13 +1,16 @@
 services:
   stock-bot:
-    build:
-      context: .
+    image: stock-bot
     container_name: stock-bot
     restart: unless-stopped
     env_file: .env
+    environment:
+      - TZ=Asia/Seoul
+    network_mode: host
     volumes:
       - ./data:/app/data
       - ./scripts:/app/scripts
+      - ./.env:/app/.env:ro
     logging:
       driver: json-file
       options:

@@ -114,6 +114,11 @@ def load_watchlist_kr() -> dict:
 
 
 async def run():
+    from yahoo_finance import is_korean_market_open
+    if not is_korean_market_open():
+        print(f"[국장 리포트] 오늘은 한국 장 휴장일 — 스킵 ({datetime.now().strftime('%Y-%m-%d')})")
+        return
+
     print(f"[국장 리포트] 실행 시작: {datetime.now()}")
     today = datetime.now().strftime("%Y-%m-%d")
     loop = asyncio.get_running_loop()
