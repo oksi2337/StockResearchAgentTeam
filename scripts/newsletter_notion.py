@@ -112,13 +112,67 @@ def parse_sections(md: str) -> dict[str, str]:
     return sections
 
 
+def _parse_md_table(lines: list[str]) -> dict | None:
+    """마크다운 표 라인 목록 → Notion table 블록."""
+    rows = []
+    for line in lines:
+        if re.match(r"^\|[-| :]+\|$", line):
+            continue
+        cells = [c.strip() for c in line.split("|")[1:-1]]
+        if cells:
+            rows.append(cells)
+
+    if len(rows) < 2:
+        return None
+
+    headers = rows[0]
+    n = len(headers)
+
+    def cell(text: str) -> list[dict]:
+        return [{"type": "text", "text": {"content": text[:2000]}}]
+
+    table_rows = [
+        {"object": "block", "type": "table_row", "table_row": {"cells": [cell(h) for h in headers]}}
+    ]
+    for row in rows[1:]:
+        padded = (row + [""] * n)[:n]
+        table_rows.append(
+            {"object": "block", "type": "table_row", "table_row": {"cells": [cell(c) for c in padded]}}
+        )
+
+    return {
+        "object": "block",
+        "type": "table",
+        "table": {
+            "table_width": n,
+            "has_column_header": True,
+            "has_row_header": False,
+            "children": table_rows,
+        },
+    }
+
+
 def md_section_to_blocks(text: str) -> list[dict]:
     """섹션 텍스트를 Notion 블록 목록으로 변환."""
     blocks = []
-    for line in text.splitlines():
-        stripped = line.strip()
+    lines = text.splitlines()
+    i = 0
+    while i < len(lines):
+        stripped = lines[i].strip()
         if not stripped:
+            i += 1
             continue
+
+        if stripped.startswith("|"):
+            table_lines = []
+            while i < len(lines) and lines[i].strip().startswith("|"):
+                table_lines.append(lines[i].strip())
+                i += 1
+            block = _parse_md_table(table_lines)
+            if block:
+                blocks.append(block)
+            continue
+
         if stripped.startswith("- ") or stripped.startswith("* "):
             blocks.append(_bullet(stripped[2:]))
         elif re.match(r"^\d+\. ", stripped):
@@ -133,19 +187,14 @@ def md_section_to_blocks(text: str) -> list[dict]:
             blocks.append(_divider())
         else:
             blocks.append(_paragraph(stripped))
+        i += 1
+
     return blocks or [_paragraph("(내용 없음)")]
 
 
 def build_page_blocks(sections: dict[str, str]) -> list[dict]:
     """전체 Notion 페이지 블록 구성."""
     blocks: list[dict] = []
-
-    blocks.append(_callout(
-        "⚠️ 표시 항목은 수치·고유명사를 원문 링크에서 직접 확인하세요. "
-        "각 섹션 토글을 펼쳐서 편집 후 검수 완료 상태로 변경하세요.",
-        "📋"
-    ))
-    blocks.append(_divider())
 
     for title, content in sections.items():
         if title == "header":
@@ -162,7 +211,7 @@ def create_notion_page(config: dict, md_path: Path, date_str: str) -> str:
     md_text = md_path.read_text(encoding="utf-8")
     sections = parse_sections(md_text)
 
-    page_title = f"[{config['id']}] {config['name']} — {date_str}"
+    page_title = f"{config['name']} — {date_str}"
     blocks = build_page_blocks(sections)
 
     # Notion API 블록 한 번에 최대 100개 → 첫 번째 create에 담을 수 있는 분량
@@ -194,9 +243,17 @@ def run(newsletter_id: str) -> str:
     date_str = datetime.now(KST).strftime("%Y-%m-%d")
     date_compact = date_str.replace("-", "")
 
-    md_path = RESEARCH_DIR / f"newsletter_{newsletter_id}_{date_compact}.md"
-    if not md_path.exists():
-        raise FileNotFoundError(f"초안 파일 없음: {md_path} (newsletter_ai.py 먼저 실행)")
+    final_path = RESEARCH_DIR / f"newsletter_{newsletter_id}_{date_compact}_final.md"
+    draft_path = RESEARCH_DIR / f"newsletter_{newsletter_id}_{date_compact}.md"
+
+    if final_path.exists():
+        md_path = final_path
+        print(f"[Notion] 검수 완료본 사용: {final_path.name}")
+    elif draft_path.exists():
+        md_path = draft_path
+        print(f"[Notion] 검수 전 초안 사용: {draft_path.name}")
+    else:
+        raise FileNotFoundError(f"파일 없음: {final_path} (newsletter_ai.py 먼저 실행)")
 
     config = json.loads((DATA_DIR / f"newsletter_config_{newsletter_id}.json").read_text(encoding="utf-8"))
 

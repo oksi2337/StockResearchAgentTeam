@@ -155,7 +155,7 @@ async def on_ready():
     except Exception as e:
         print(f"[슬래시 커맨드] 동기화 실패: {e}")
     realtime_watchlist_alert.start()
-    print(f"[실시간알림] 장중 20분 주기 워치리스트 감시 시작 (±{ALERT_THRESHOLD_PCT}%)")
+    print(f"[실시간알림] 장중 3분 주기 워치리스트 감시 시작 (±{ALERT_THRESHOLD_PCT}%)")
 
     scheduler = AsyncIOScheduler(timezone=KST_TZ)
     scheduler.add_job(scheduled_daily, CronTrigger(hour=7, minute=0, timezone=KST_TZ))

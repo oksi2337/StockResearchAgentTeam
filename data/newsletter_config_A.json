@@ -9,7 +9,7 @@
     "send_time": "06:30"
   },
   "stibee_list_id_env": "STIBEE_LIST_ID_A",
-  "notion_database_id_env": "NOTION_DATABASE_ID",
+  "notion_database_id_env": "NOTION_DATABASE_ID_A",
   "market_tickers": {
     "USD/KRW": "USDKRW=X",
     "JPY/KRW": "JPYKRW=X",

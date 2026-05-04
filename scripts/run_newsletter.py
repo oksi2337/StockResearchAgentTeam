@@ -5,7 +5,8 @@ run_newsletter.py — 뉴스레터 전체 파이프라인 오케스트레이터
 단계:
   1. newsletter_collect  — RSS 수집 + 시장 데이터
   2. newsletter_ai       — Haiku 사실 추출 + Sonnet 본문 생성
-  3. newsletter_notion   — Notion 초안 페이지 업로드
+  3. newsletter_review   — Claude Sonnet 검수 → _final.md
+  4. newsletter_notion   — Notion 최종본 페이지 업로드 (A/B 별도 DB)
 """
 import sys
 import time
@@ -49,7 +50,17 @@ def main():
 
     time.sleep(2)
 
-    # ── 3단계: Notion 업로드 ────────────────────────────────────
+    # ── 3단계: Claude 검수 ──────────────────────────────────────
+    try:
+        from newsletter_review import run as review_draft
+        final_path = review_draft(nid)
+        print(f"\n최종 파일: {final_path}")
+    except Exception as e:
+        print(f"\n[경고] Claude 검수 실패 (원본 초안으로 계속): {e}")
+
+    time.sleep(2)
+
+    # ── 4단계: Notion 업로드 ────────────────────────────────────
     notion_url = None
     try:
         import os
@@ -66,7 +77,7 @@ def main():
 
     time.sleep(2)
 
-    print("\n[안내] Notion 초안 검수 후 직접 발송하세요.")
+    print("\n[안내] Notion 검수 완료본 확인 후 직접 발송하세요.")
 
     # ── 완료 ─────────────────────────────────────────────────────
     print(f"\n{'='*60}")

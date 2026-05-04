@@ -10,6 +10,8 @@ services:
     volumes:
       - ./data:/app/data
       - ./scripts:/app/scripts
+      - ./research:/app/research
+      - ./logs:/app/logs
       - ./.env:/app/.env:ro
     logging:
       driver: json-file

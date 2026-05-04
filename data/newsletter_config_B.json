@@ -9,7 +9,7 @@
     "send_time": "07:00"
   },
   "stibee_list_id_env": "STIBEE_LIST_ID_B",
-  "notion_database_id_env": "NOTION_DATABASE_ID",
+  "notion_database_id_env": "NOTION_DATABASE_ID_B",
   "market_tickers": {},
   "sources": [
     {"name": "TechCrunch AI", "url": "https://techcrunch.com/category/artificial-intelligence/feed/", "max_items": 8},

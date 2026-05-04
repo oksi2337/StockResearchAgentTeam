@@ -8,3 +8,9 @@ SHELL=/bin/bash
 
 # 16:00 KST — 국장 마감 리포트 + 한국 시장 지표 (Yahoo Finance 종가 반영 대기 포함)
 0 16 * * * /usr/local/bin/python /app/scripts/korean_market_report.py >> /app/logs/korean.log 2>&1
+
+# 04:00 KST 매일 — 뉴스레터 A (글로벌 정치·경제)
+0 4 * * * cd /app && /usr/local/bin/python scripts/run_newsletter.py A >> /app/logs/newsletter_A.log 2>&1
+
+# 04:30 KST 매일 — 뉴스레터 B (AI 트렌드)
+30 4 * * * cd /app && /usr/local/bin/python scripts/run_newsletter.py B >> /app/logs/newsletter_B.log 2>&1
