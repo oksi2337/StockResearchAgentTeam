@@ -8,12 +8,29 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Commands
 
+**초기 설정**
+```bash
+npm install                          # Node.js 의존성 설치
+pip install -r requirements.txt      # Python 의존성 설치 (discord.py 2.4, anthropic 0.49, yfinance, pandas 2.2, finance-datareader 등)
+cp .env.example .env                 # 환경변수 파일 생성 후 편집
+```
+
+필수 환경변수 (미설정 시 봇 크래시):
+- `ANTHROPIC_API_KEY`, `DISCORD_BOT_TOKEN`, `DISCORD_GUILD_ID`
+- `DISCORD_CH_MARKET_ALERT`, `DISCORD_CH_DAILY_SUMMARY`, `DISCORD_CH_STOCK_ANALYSIS`, `DISCORD_CH_SECTOR_TREND`
+
+선택 환경변수:
+- `FRED_API_KEY` — TIPS 실질금리·HY 스프레드
+- `NOTION_API_KEY` + `NOTION_DATABASE_ID` — 뉴스레터 초안 Notion 저장
+- `STIBEE_API_KEY` + `STIBEE_LIST_ID_A/B` — Stibee 이메일 캠페인 생성
+
 **Dashboard (Node.js)**
 ```bash
 npm run dev              # 서버(3001) + 클라이언트(5173) 동시 실행
 npm run dev:server      # Express 서버만 (tsx watch)
 npm run dev:client      # Vite 개발 서버만
 npm run build           # tsc 서버 컴파일 + Vite 클라이언트 빌드
+npm run preview         # 빌드 결과물 미리보기 (Vite preview)
 ```
 
 **Discord Agent Team (Python)**
@@ -28,28 +45,36 @@ python scripts/market_indicators.py               # 시장 지표 수집 테스�
 python scripts/portfolio_excel.py output/_temp_portfolio.json  # 포트폴리오 Excel 생성
 ```
 
-`.env.example`을 `.env`로 복사 후 `ANTHROPIC_API_KEY`, `DISCORD_BOT_TOKEN` 설정 필요.
-`FRED_API_KEY` (선택): TIPS 실질금리·HY 스프레드 포함 시 필요. https://fred.stlouisfed.org/docs/api/api_key.html 에서 무료 발급.
+**Newsletter (Python)**
+```bash
+python scripts/run_newsletter.py A              # 뉴스레터 A 전체 파이프라인 (수집→AI→Notion→Stibee)
+python scripts/run_newsletter.py B --dry-run    # 뉴스레터 B 드라이런 (Stibee 캠페인 생성 건너뜀)
+```
 
 **Windows Task Scheduler (자동 실행)**
 - `StockResearch_DailyReport` — 매일 07:00 글로벌 지표 + 시장 감시 + 섹터 분석
 - `StockResearch_KoreanMarket` — 매일 15:31 국장 마감 리포트 + 한국 시장 지표
 - `StockResearch_DiscordBot` — 로그인 시 봇 자동 시작
+- `StockResearch_Newsletter_A` — 월~금 04:00 뉴스레터 A 파이프라인
+- `StockResearch_Newsletter_B` — 화·목·토 04:30 뉴스레터 B 파이프라인
 
 재등록 시: `scripts/setup_scheduler.ps1`을 관리자 PowerShell에서 실행.
 봇 재시작 (PowerShell): `schtasks /End /TN "StockResearch_DiscordBot"` → `schtasks /Run /TN "StockResearch_DiscordBot"`
 
 **Docker (Discord 봇 컨테이너)**
 ```bash
-docker-compose up -d        # 백그라운드로 봇 실행
-docker-compose logs -f      # 실시간 로그 확인
-docker-compose down         # 봇 종료
+docker build -t stock-bot .  # 최초 또는 requirements.txt 변경 후 빌드
+docker-compose up -d         # 백그라운드로 봇 실행
+docker-compose logs -f       # 실시간 로그 확인
+docker-compose down          # 봇 종료
 ```
 데이터는 `./data:/app/data`, 스크립트는 `./scripts:/app/scripts`로 마운트 — 컨테이너 재시작 없이 스크립트 수정 즉시 반영. 로그는 JSON 드라이버로 10MB × 3개 로테이션.
 
+> **주의**: Docker는 Discord 봇(`discord_bot.py`)만 실행. `docker/entrypoint.sh`와 `docker/crontab`은 준비됐지만 현재 Dockerfile의 CMD에 연결되지 않음 — 스케줄 작업(07:00, 15:31, 뉴스레터)은 Windows Task Scheduler가 담당.
+
 ## Architecture
 
-이 저장소는 세 개의 독립적인 시스템으로 구성됩니다.
+이 저장소는 네 개의 독립적인 시스템으로 구성됩니다.
 
 ---
 
@@ -170,6 +195,7 @@ Full-stack TypeScript: React+Vite 프론트엔드, Express 백엔드, `data/` �
 | `/korean-market` | Haiku 4.5 | `korean_market_report.py` 실행 → Discord #일간-요약 |
 | `/sector-analyst` | Haiku 4.5 | `sector_analyst.py` 실행 → Discord #섹터-동향 |
 | `/portfolio-analyzer [이미지1] [이미지2]` | Sonnet 4.6 | 스크린샷에서 목표비중·보유현황 추출 → Excel 리포트 생성 |
+| `/newsletter [A\|B] [--dry-run]` | Haiku 4.5 | 뉴스레터 파이프라인 실행 (RSS 수집 → AI 초안 → Notion → Stibee) |
 
 **stock-agent 출력물**:
 - 리서치 마크다운: `research/TICKER_YYYYMMDD.md` — `/stock-research-formatter`가 이 파일을 읽어 Excel 생성
@@ -183,3 +209,25 @@ Full-stack TypeScript: React+Vite 프론트엔드, Express 백엔드, `data/` �
 - 인자 1개: `data/target_portfolio.json` 기존값 사용, 인자=보유현황 이미지 → Excel
 - `data/target_portfolio.json` — 목표 포트폴리오 설정 (`total_investment`, `stocks[]` 배열). 종목명 매칭은 부분 일치 허용.
 - 출력: `output/portfolio_status_YYYYMMDD_HHmm.xlsx`
+
+---
+
+### 4. 뉴스레터 자동화 (Python)
+
+`scripts/run_newsletter.py`가 4단계 파이프라인을 순서대로 실행합니다. Stibee 발송은 자동화하지 않고 캠페인 생성까지만 수행 — 이후 수동 발송.
+
+**파이프라인 흐름**
+
+```
+run_newsletter.py [A|B]
+  1. newsletter_collect.py  — RSS 피드 + 시장 데이터 수집 → data/newsletter_config_{ID}.json
+  2. newsletter_ai.py       — Haiku(사실 추출) + Sonnet(본문 생성) → output/_temp_newsletter_{ID}.md
+  3. newsletter_notion.py   — Notion DB에 초안 페이지 업로드 (NOTION_API_KEY 없으면 건너뜀)
+  4. newsletter_stibee.py   — Stibee 캠페인 생성 (--dry-run 시 건너뜀)
+```
+
+**뉴스레터 구분**
+- A: 글로벌 정치경제 — 월~금 04:00 자동 실행, 06:30 수동 발송
+- B: AI 트렌드 — 화·목·토 04:30 자동 실행, 07:00 수동 발송
+
+**설정 파일**: `data/newsletter_config_{A|B}.json` — 구독자 목록·RSS 소스·템플릿 등 뉴스레터별 설정.

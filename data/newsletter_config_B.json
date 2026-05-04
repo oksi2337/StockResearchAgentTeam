@@ -1,0 +1,62 @@
+{
+  "id": "B",
+  "name": "AI 트렌드 브리핑",
+  "description": "개발자·기획자·마케터·창업가 대상 화·목·토 아침 7:00 발송",
+  "schedule": {
+    "days": ["tue", "thu", "sat"],
+    "pipeline_hour": 4,
+    "pipeline_minute": 30,
+    "send_time": "07:00"
+  },
+  "stibee_list_id_env": "STIBEE_LIST_ID_B",
+  "notion_database_id_env": "NOTION_DATABASE_ID",
+  "market_tickers": {},
+  "sources": [
+    {"name": "TechCrunch AI", "url": "https://techcrunch.com/category/artificial-intelligence/feed/", "max_items": 8},
+    {"name": "The Verge AI", "url": "https://www.theverge.com/ai-artificial-intelligence/rss/index.xml", "max_items": 6},
+    {"name": "Ars Technica", "url": "https://feeds.arstechnica.com/arstechnica/technology-lab", "max_items": 5},
+    {"name": "VentureBeat AI", "url": "https://venturebeat.com/category/ai/feed/", "max_items": 6},
+    {"name": "MIT Technology Review", "url": "https://www.technologyreview.com/feed/", "max_items": 4},
+    {"name": "Hacker News", "url": "https://news.ycombinator.com/rss", "max_items": 8},
+    {"name": "요즘IT", "url": "https://yozm.wishket.com/magazine/rss/", "max_items": 5},
+    {"name": "AI타임스", "url": "https://www.aitimes.com/rss/allArticle.xml", "max_items": 5},
+    {"name": "Wired AI", "url": "https://www.wired.com/feed/tag/artificial-intelligence/rss", "max_items": 5},
+    {"name": "OpenAI Blog", "url": "https://openai.com/blog/rss.xml", "max_items": 3},
+    {"name": "Hugging Face Blog", "url": "https://huggingface.co/blog/feed.xml", "max_items": 3},
+    {"name": "Google DeepMind", "url": "https://deepmind.google/discover/blog/rss.xml", "max_items": 3},
+    {"name": "블로터", "url": "https://www.bloter.net/feed", "max_items": 4}
+  ],
+  "sections": [
+    {
+      "id": "bignews",
+      "title": "이번 주 빅뉴스",
+      "emoji": "🚀",
+      "description": "OpenAI·Anthropic·구글·메타 등 주요 AI 기업 발표"
+    },
+    {
+      "id": "tools",
+      "title": "새로 나온 도구 3",
+      "emoji": "🛠️",
+      "description": "실제 써볼 만한 AI 도구 3개, 한 줄 평가 포함"
+    },
+    {
+      "id": "casestudy",
+      "title": "케이스 스터디",
+      "emoji": "📖",
+      "description": "국내외 AI 실제 활용 사례 1개 심층 분석"
+    },
+    {
+      "id": "korea",
+      "title": "한국 AI 동향",
+      "emoji": "🇰🇷",
+      "description": "네이버·카카오·국내 스타트업 AI 소식"
+    },
+    {
+      "id": "reading",
+      "title": "이번 주 읽을거리",
+      "emoji": "📚",
+      "description": "추천 아티클 5개 링크 + 한 줄 소개"
+    }
+  ],
+  "tone_guide": "개발자·기획자 대상. 기술 용어 허용하되 비개발자도 이해 가능한 수준. '~습니다' 체. 실용적 시각 유지. 7분 안에 읽을 수 있는 분량."
+}

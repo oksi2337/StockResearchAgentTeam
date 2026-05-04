@@ -8,3 +8,7 @@ requests==2.32.3
 finance-datareader
 APScheduler>=3.10.0
 pytz
+
+# 뉴스레터 자동화
+feedparser>=6.0.0
+notion-client>=2.0.0

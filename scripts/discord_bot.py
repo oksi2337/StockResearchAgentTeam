@@ -144,16 +144,6 @@ async def scheduled_daily():
         print(f"[스케줄] 일간 리포트 오류: {e}")
 
 
-async def scheduled_korea():
-    """매일 15:31 KST — 국장 마감 리포트"""
-    print(f"[스케줄] 국장 리포트 시작: {datetime.now(KST)}")
-    try:
-        from korean_market_report import run as korea_run
-        await korea_run()
-    except Exception as e:
-        print(f"[스케줄] 국장 리포트 오류: {e}")
-
-
 # ── 봇 이벤트 ───────────────────────────────────────────────
 @bot.event
 async def on_ready():
@@ -169,9 +159,8 @@ async def on_ready():
 
     scheduler = AsyncIOScheduler(timezone=KST_TZ)
     scheduler.add_job(scheduled_daily, CronTrigger(hour=7, minute=0, timezone=KST_TZ))
-    scheduler.add_job(scheduled_korea, CronTrigger(hour=15, minute=31, timezone=KST_TZ))
     scheduler.start()
-    print("[스케줄] 07:00 일간 리포트 / 15:31 국장 리포트 등록 완료 (KST)")
+    print("[스케줄] 07:00 일간 리포트 등록 완료 (KST) — 15:31 국장 리포트는 Task Scheduler 담당")
 
 
 # ── 자연어 메시지 처리 ───────────────────────────────────────

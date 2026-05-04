@@ -74,6 +74,60 @@ Register-ScheduledTask `
     -Force
 
 Write-Host "[완료] StockResearch_KoreanMarket 등록됨 (매일 15:31)" -ForegroundColor Green
+
+# ── Task 4: 뉴스레터 A (월~금 04:00 — 06:30 발송 준비)
+$action4 = New-ScheduledTaskAction `
+    -Execute $PythonPath `
+    -Argument "run_newsletter.py A" `
+    -WorkingDirectory $ScriptDir
+
+# 월~금만 실행 (요일별 개별 트리거 등록)
+$triggerMon = New-ScheduledTaskTrigger -Weekly -DaysOfWeek Monday    -At "04:00AM"
+$triggerTue = New-ScheduledTaskTrigger -Weekly -DaysOfWeek Tuesday   -At "04:00AM"
+$triggerWed = New-ScheduledTaskTrigger -Weekly -DaysOfWeek Wednesday -At "04:00AM"
+$triggerThu = New-ScheduledTaskTrigger -Weekly -DaysOfWeek Thursday  -At "04:00AM"
+$triggerFri = New-ScheduledTaskTrigger -Weekly -DaysOfWeek Friday    -At "04:00AM"
+
+$settings4 = New-ScheduledTaskSettingsSet `
+    -ExecutionTimeLimit (New-TimeSpan -Hours 2) `
+    -StartWhenAvailable
+
+Register-ScheduledTask `
+    -TaskName "StockResearch_Newsletter_A" `
+    -Action $action4 `
+    -Trigger @($triggerMon, $triggerTue, $triggerWed, $triggerThu, $triggerFri) `
+    -Settings $settings4 `
+    -Description "월~금 04:00 뉴스레터 A(글로벌 정치경제) 수집→AI→Notion→Stibee(06:30 발송)" `
+    -RunLevel Highest `
+    -Force
+
+Write-Host "[완료] StockResearch_Newsletter_A 등록됨 (월~금 04:00)" -ForegroundColor Green
+
+# ── Task 5: 뉴스레터 B (화·목·토 04:30 — 07:00 발송 준비)
+$action5 = New-ScheduledTaskAction `
+    -Execute $PythonPath `
+    -Argument "run_newsletter.py B" `
+    -WorkingDirectory $ScriptDir
+
+$triggerTue2 = New-ScheduledTaskTrigger -Weekly -DaysOfWeek Tuesday  -At "04:30AM"
+$triggerThu2 = New-ScheduledTaskTrigger -Weekly -DaysOfWeek Thursday -At "04:30AM"
+$triggerSat  = New-ScheduledTaskTrigger -Weekly -DaysOfWeek Saturday -At "04:30AM"
+
+$settings5 = New-ScheduledTaskSettingsSet `
+    -ExecutionTimeLimit (New-TimeSpan -Hours 2) `
+    -StartWhenAvailable
+
+Register-ScheduledTask `
+    -TaskName "StockResearch_Newsletter_B" `
+    -Action $action5 `
+    -Trigger @($triggerTue2, $triggerThu2, $triggerSat) `
+    -Settings $settings5 `
+    -Description "화·목·토 04:30 뉴스레터 B(AI 트렌드) 수집→AI→Notion→Stibee(07:00 발송)" `
+    -RunLevel Highest `
+    -Force
+
+Write-Host "[완료] StockResearch_Newsletter_B 등록됨 (화·목·토 04:30)" -ForegroundColor Green
+
 Write-Host ""
 Write-Host "등록된 작업 목록:" -ForegroundColor Cyan
 Get-ScheduledTask | Where-Object { $_.TaskName -like "StockResearch_*" } | Format-Table TaskName, State
