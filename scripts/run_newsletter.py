@@ -1,12 +1,11 @@
 """
 run_newsletter.py — 뉴스레터 전체 파이프라인 오케스트레이터
-사용법: python scripts/run_newsletter.py [A|B] [--dry-run]
+사용법: python scripts/run_newsletter.py [A|B]
 
 단계:
   1. newsletter_collect  — RSS 수집 + 시장 데이터
   2. newsletter_ai       — Haiku 사실 추출 + Sonnet 본문 생성
   3. newsletter_notion   — Notion 초안 페이지 업로드
-  4. newsletter_stibee   — Stibee 캠페인 생성 (발송은 수동)
 """
 import sys
 import time
@@ -18,16 +17,13 @@ sys.path.insert(0, str(Path(__file__).parent))
 def main():
     args = sys.argv[1:]
     nid = "A"
-    dry_run = False
 
     for arg in args:
         if arg.upper() in ("A", "B"):
             nid = arg.upper()
-        elif arg == "--dry-run":
-            dry_run = True
 
     print(f"\n{'='*60}")
-    print(f"  뉴스레터 {nid} 파이프라인 시작 (dry_run={dry_run})")
+    print(f"  뉴스레터 {nid} 파이프라인 시작")
     print(f"{'='*60}\n")
 
     # ── 1단계: 수집 ─────────────────────────────────────────────

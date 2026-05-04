@@ -32,7 +32,12 @@
     {"name": "CNBC Top News", "url": "https://www.cnbc.com/id/100003114/device/rss/rss.html", "max_items": 5},
     {"name": "Financial Times", "url": "https://www.ft.com/world?format=rss", "max_items": 4},
     {"name": "Yahoo Finance", "url": "https://finance.yahoo.com/news/rssindex", "max_items": 5},
-    {"name": "MarketWatch", "url": "http://feeds.marketwatch.com/marketwatch/topstories/", "max_items": 4}
+    {"name": "MarketWatch", "url": "http://feeds.marketwatch.com/marketwatch/topstories/", "max_items": 4},
+    {"name": "New York Times World", "url": "https://rss.nytimes.com/services/xml/rss/nyt/World.xml", "max_items": 5},
+    {"name": "Washington Post World", "url": "https://feeds.washingtonpost.com/rss/world", "max_items": 4},
+    {"name": "CNN World", "url": "http://rss.cnn.com/rss/edition_world.rss", "max_items": 4},
+    {"name": "Fox News World", "url": "https://moxie.foxnews.com/google-publisher/world.xml", "max_items": 3},
+    {"name": "Bloomberg Markets", "url": "https://feeds.bloomberg.com/markets/news.rss", "max_items": 4}
   ],
   "sections": [
     {

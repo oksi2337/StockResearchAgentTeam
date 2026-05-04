@@ -20,6 +20,7 @@ cp .env.example .env                 # 환경변수 파일 생성 후 편집
 - `DISCORD_CH_MARKET_ALERT`, `DISCORD_CH_DAILY_SUMMARY`, `DISCORD_CH_STOCK_ANALYSIS`, `DISCORD_CH_SECTOR_TREND`
 
 선택 환경변수:
+- `PORT` — Express 서버 포트 (기본값: 3001)
 - `FRED_API_KEY` — TIPS 실질금리·HY 스프레드
 - `NOTION_API_KEY` + `NOTION_DATABASE_ID` — 뉴스레터 초안 Notion 저장
 - `STIBEE_API_KEY` + `STIBEE_LIST_ID_A/B` — Stibee 이메일 캠페인 생성
@@ -29,7 +30,7 @@ cp .env.example .env                 # 환경변수 파일 생성 후 편집
 npm run dev              # 서버(3001) + 클라이언트(5173) 동시 실행
 npm run dev:server      # Express 서버만 (tsx watch)
 npm run dev:client      # Vite 개발 서버만
-npm run build           # tsc 서버 컴파일 + Vite 클라이언트 빌드
+npm run build           # 프론트엔드 타입체크(noEmit) + Vite 클라이언트 번들 — 서버는 컴파일 없이 항상 tsx로 실행
 npm run preview         # 빌드 결과물 미리보기 (Vite preview)
 ```
 
@@ -47,8 +48,8 @@ python scripts/portfolio_excel.py output/_temp_portfolio.json  # 포트폴리오
 
 **Newsletter (Python)**
 ```bash
-python scripts/run_newsletter.py A              # 뉴스레터 A 전체 파이프라인 (수집→AI→Notion→Stibee)
-python scripts/run_newsletter.py B --dry-run    # 뉴스레터 B 드라이런 (Stibee 캠페인 생성 건너뜀)
+python scripts/run_newsletter.py A    # 뉴스레터 A 파이프라인 (수집→AI→Notion)
+python scripts/run_newsletter.py B    # 뉴스레터 B 파이프라인 (수집→AI→Notion)
 ```
 
 **Windows Task Scheduler (자동 실행)**
@@ -106,6 +107,10 @@ Full-stack TypeScript: React+Vite 프론트엔드, Express 백엔드, `data/` �
 - Sectors: Technology, Finance, Healthcare, Energy, Consumer, Industrial, Other
 
 **UI 규칙**: `src/index.css` CSS 변수 다크 테마 — CSS 프레임워크 추가 금지. UI 텍스트는 한국어. 상승 `#3fb950`, 하락 `#f85149`. 개발 모드에서 `/api/*` 는 Vite가 `localhost:3001`로 프록시.
+
+**TypeScript 설정 구분**:
+- `tsconfig.json` — `src/`(프론트엔드) 전용, `"noEmit": true` → 타입체크만, 파일 출력 없음
+- `tsconfig.server.json` — `server/` 전용, `outDir: "dist-server"` → `npm run build`에 포함되지 않음. 서버는 개발·프로덕션 모두 `tsx`로 직접 실행
 
 ---
 
@@ -195,7 +200,9 @@ Full-stack TypeScript: React+Vite 프론트엔드, Express 백엔드, `data/` �
 | `/korean-market` | Haiku 4.5 | `korean_market_report.py` 실행 → Discord #일간-요약 |
 | `/sector-analyst` | Haiku 4.5 | `sector_analyst.py` 실행 → Discord #섹터-동향 |
 | `/portfolio-analyzer [이미지1] [이미지2]` | Sonnet 4.6 | 스크린샷에서 목표비중·보유현황 추출 → Excel 리포트 생성 |
-| `/newsletter [A\|B] [--dry-run]` | Haiku 4.5 | 뉴스레터 파이프라인 실행 (RSS 수집 → AI 초안 → Notion → Stibee) |
+| `/newsletter [A\|B]` | Haiku 4.5 | 뉴스레터 파이프라인 실행 (RSS 수집 → AI 초안 → Notion) |
+
+> **주의 — 에이전트 파일 내 절대 경로**: `.claude/agents/stock-agent.md`의 파일 경로가 구 OneDrive 경로(`C:\Users\kukuk\OneDrive\바탕 화면\business\STOCK\`)로 하드코딩돼 있음. 현재 작업 디렉터리는 `D:\business\STOCK`. 에이전트가 파일을 잘못된 위치에 쓰는 경우 해당 파일의 경로를 일괄 수정할 것.
 
 **stock-agent 출력물**:
 - 리서치 마크다운: `research/TICKER_YYYYMMDD.md` — `/stock-research-formatter`가 이 파일을 읽어 Excel 생성
@@ -220,11 +227,11 @@ Full-stack TypeScript: React+Vite 프론트엔드, Express 백엔드, `data/` �
 
 ```
 run_newsletter.py [A|B]
-  1. newsletter_collect.py  — RSS 피드 + 시장 데이터 수집 → data/newsletter_config_{ID}.json
-  2. newsletter_ai.py       — Haiku(사실 추출) + Sonnet(본문 생성) → output/_temp_newsletter_{ID}.md
+  1. newsletter_collect.py  — RSS 피드 + 시장 데이터 수집 → data/_temp_newsletter_{ID}.json
+  2. newsletter_ai.py       — Haiku(사실 추출) + Sonnet(본문 생성) → research/newsletter_{ID}_{YYYYMMDD}.md
   3. newsletter_notion.py   — Notion DB에 초안 페이지 업로드 (NOTION_API_KEY 없으면 건너뜀)
-  4. newsletter_stibee.py   — Stibee 캠페인 생성 (--dry-run 시 건너뜀)
 ```
+Stibee 발송은 파이프라인에서 제외 — Notion 검수 후 Stibee 대시보드에서 수동 발송.
 
 **뉴스레터 구분**
 - A: 글로벌 정치경제 — 월~금 04:00 자동 실행, 06:30 수동 발송

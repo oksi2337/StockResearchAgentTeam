@@ -30,18 +30,36 @@ def _get_db_id(config: dict) -> str:
     return db_id
 
 
+def _parse_rich_text(text: str) -> list[dict]:
+    """마크다운 [텍스트](url) 링크와 **bold** → Notion rich_text 배열로 변환."""
+    result = []
+    pattern = re.compile(r'\[([^\]]+)\]\(([^)]+)\)|\*\*([^*]+)\*\*')
+    last_end = 0
+    for m in pattern.finditer(text):
+        if m.start() > last_end:
+            result.append({"type": "text", "text": {"content": text[last_end:m.start()][:2000]}})
+        if m.group(1) is not None:
+            result.append({"type": "text", "text": {"content": m.group(1)[:2000], "link": {"url": m.group(2)}}})
+        else:
+            result.append({"type": "text", "text": {"content": m.group(3)[:2000]}})
+        last_end = m.end()
+    if last_end < len(text):
+        result.append({"type": "text", "text": {"content": text[last_end:][:2000]}})
+    return result or [{"type": "text", "text": {"content": text[:2000]}}]
+
+
 def _text(content: str) -> dict:
     return {"type": "text", "text": {"content": content[:2000]}}
 
 
 def _paragraph(text: str) -> dict:
     return {"object": "block", "type": "paragraph",
-            "paragraph": {"rich_text": [_text(text)]}}
+            "paragraph": {"rich_text": _parse_rich_text(text)}}
 
 
 def _heading2(text: str) -> dict:
     return {"object": "block", "type": "heading_2",
-            "heading_2": {"rich_text": [_text(text)]}}
+            "heading_2": {"rich_text": _parse_rich_text(text)}}
 
 
 def _callout(text: str, emoji: str = "⚠️") -> dict:
@@ -71,7 +89,7 @@ def _toggle(title: str, children: list[dict]) -> dict:
 
 def _bullet(text: str) -> dict:
     return {"object": "block", "type": "bulleted_list_item",
-            "bulleted_list_item": {"rich_text": [_text(text[:2000])]}}
+            "bulleted_list_item": {"rich_text": _parse_rich_text(text)}}
 
 
 def parse_sections(md: str) -> dict[str, str]:
