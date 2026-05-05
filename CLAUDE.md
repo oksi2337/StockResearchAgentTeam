@@ -23,7 +23,7 @@ cp .env.example .env                 # 환경변수 파일 생성 후 편집
 - `PORT` — Express 서버 포트 (기본값: 3001)
 - `FRED_API_KEY` — TIPS 실질금리·HY 스프레드
 - `NOTION_API_KEY` + `NOTION_DATABASE_ID_A` + `NOTION_DATABASE_ID_B` — 뉴스레터 A/B 별도 Notion DB 저장
-- `STIBEE_API_KEY` + `STIBEE_LIST_ID_A/B` — Stibee 이메일 캠페인 생성
+- `STIBEE_API_KEY` + `STIBEE_LIST_ID_A/B` — Stibee 구독자 목록 조회 (`newsletter_send.py`) + 캠페인 생성 (`newsletter_stibee.py`)
 
 **Dashboard (Node.js)**
 ```bash
@@ -75,7 +75,7 @@ docker-compose up -d         # 백그라운드로 봇 실행
 docker-compose logs -f       # 실시간 로그 확인
 docker-compose down          # 봇 종료
 ```
-데이터는 `./data:/app/data`, 스크립트는 `./scripts:/app/scripts`로 마운트 — 컨테이너 재시작 없이 스크립트 수정 즉시 반영. 로그는 JSON 드라이버로 10MB × 3개 로테이션.
+볼륨 마운트: `./data:/app/data`, `./scripts:/app/scripts`, `./research:/app/research`, `./logs:/app/logs` — 컨테이너 재시작 없이 스크립트 수정 즉시 반영. 로그는 JSON 드라이버로 10MB × 3개 로테이션.
 
 > **NAS 배포 기준**: `docker/entrypoint.sh`가 Dockerfile CMD로 연결돼 있어 컨테이너 시작 시 cron 데몬 + Discord 봇이 함께 실행됨. cron 스케줄 작업(04:50·05:00·05:59·06:00 뉴스레터, 07:00 일간 리포트, 16:00 국장 리포트)은 컨테이너 내부 cron이 담당. PC가 꺼져 있어도 NAS에서 모든 자동화가 실행되는 것이 목표. Windows Task Scheduler와 중복 등록 금지 — Discord 메시지 이중 발송 원인.
 
@@ -209,8 +209,6 @@ Full-stack TypeScript: React+Vite 프론트엔드, Express 백엔드, `data/` �
 | `/portfolio-analyzer [이미지1] [이미지2]` | Sonnet 4.6 | 스크린샷에서 목표비중·보유현황 추출 → Excel 리포트 생성 |
 | `/newsletter [A\|B]` | Haiku 4.5 | 뉴스레터 파이프라인 실행 (RSS 수집 → AI 초안 → Notion) |
 
-> **주의 — 에이전트 파일 내 절대 경로**: `.claude/agents/stock-agent.md`의 파일 경로가 구 OneDrive 경로(`C:\Users\kukuk\OneDrive\바탕 화면\business\STOCK\`)로 하드코딩돼 있음. 현재 작업 디렉터리는 `D:\business\STOCK`. 에이전트가 파일을 잘못된 위치에 쓰는 경우 해당 파일의 경로를 일괄 수정할 것.
-
 **stock-agent 출력물**:
 - 리서치 마크다운: `research/TICKER_YYYYMMDD.md` — `/stock-research-formatter`가 이 파일을 읽어 Excel 생성
 - JSON 임시파일: `output/_temp_TICKER.json` (완료 후 자동 삭제)
@@ -221,6 +219,7 @@ Full-stack TypeScript: React+Vite 프론트엔드, Express 백엔드, `data/` �
 **portfolio-analyzer 동작**:
 - 인자 2개: 첫 번째=목표비중 이미지, 두 번째=보유현황 이미지 → `data/target_portfolio.json` 갱신 후 Excel
 - 인자 1개: `data/target_portfolio.json` 기존값 사용, 인자=보유현황 이미지 → Excel
+- 매입금액이 이미지에 없으면 매입가 × 보유수량으로 계산. 환율 미표시 시 역산 또는 1,400원 가정.
 - `data/target_portfolio.json` — 목표 포트폴리오 설정 (`total_investment`, `stocks[]` 배열). 종목명 매칭은 부분 일치 허용.
 - 출력: `output/portfolio_status_YYYYMMDD_HHmm.xlsx`
 

@@ -61,7 +61,7 @@ $ARGUMENTS에서 기업명과 티커를 분리하세요.
 
 수집한 내용을 아래 JSON 구조에 맞게 구성한 뒤 Write 도구로 저장하세요.
 
-- 경로: `C:\Users\kukuk\OneDrive\바탕 화면\business\STOCK\output\_temp_TICKER.json`
+- 경로: `D:\business\STOCK\output\_temp_TICKER.json`
   (TICKER는 실제 티커로 대체)
 - 정보가 불확실하거나 검색되지 않은 항목은 빈 문자열 `""` 로 표기하세요.
 - 주가의 위치(단기/중장기)는 차트 직접 확인이 필요하므로 항상 `""` 로 남기세요.
@@ -106,10 +106,10 @@ pip install openpyxl -q
 ```
 
 ```bash
-python "C:\Users\kukuk\OneDrive\바탕 화면\business\STOCK\.claude\skills\stock-research-formatter\scripts\make_direct.py" \
-    "C:\Users\kukuk\OneDrive\바탕 화면\business\STOCK\output\_temp_TICKER.json" \
-    "C:\Users\kukuk\OneDrive\바탕 화면\business\STOCK\output\TICKER_YYYYMMDD.xlsx" \
-    "C:\Users\kukuk\OneDrive\바탕 화면\business\STOCK\output\portfolio_master.xlsx"
+python "D:\business\STOCK\.claude\skills\stock-research-formatter\scripts\make_direct.py" \
+    "D:\business\STOCK\output\_temp_TICKER.json" \
+    "D:\business\STOCK\output\TICKER_YYYYMMDD.xlsx" \
+    "D:\business\STOCK\output\portfolio_master.xlsx"
 ```
 
 (TICKER, YYYYMMDD는 실제 값으로 대체)
@@ -117,7 +117,7 @@ python "C:\Users\kukuk\OneDrive\바탕 화면\business\STOCK\.claude\skills\stoc
 Excel 생성 완료 후 임시 JSON 파일을 삭제하세요:
 
 ```bash
-rm "C:\Users\kukuk\OneDrive\바탕 화면\business\STOCK\output\_temp_TICKER.json"
+rm "D:\business\STOCK\output\_temp_TICKER.json"
 ```
 
 ---

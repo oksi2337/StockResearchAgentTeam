@@ -2,7 +2,14 @@
   "permissions": {
     "allow": [
       "Bash(rm \"C:\\\\Users\\\\kukuk\\\\.claude\\\\commands\\\\company-research.md\" \"C:\\\\Users\\\\kukuk\\\\.claude\\\\commands\\\\stock-report.md\")",
-      "Read(//c/Users/kukuk/.claude/commands/**)"
+      "Read(//c/Users/kukuk/.claude/commands/**)",
+      "Bash(git add *)",
+      "Bash(git commit -m ' *)",
+      "Bash(git push *)",
+      "Bash(git commit *)",
+      "PowerShell(Get-ChildItem \"C:\\\\Users\\\\kukuk\\\\OneDrive\\\\사진\\\\스크린샷\" -File | Where-Object { $_.Extension -match '\\\\.\\(png|jpg|jpeg|bmp\\)' } | Sort-Object LastWriteTime -Descending | Select-Object -First 6 | Format-Table Name, LastWriteTime -AutoSize)",
+      "PowerShell(Get-ChildItem \"C:\\\\Users\\\\kukuk\\\\OneDrive\\\\사진\\\\스크린샷\" -File | Where-Object { $_.Extension -match '\\\\.\\(png|jpg|jpeg|bmp\\)' } | Sort-Object LastWriteTime -Descending | Select-Object -First 3 | Format-Table Name, LastWriteTime -AutoSize)",
+      "Bash(python *)"
     ]
   }
 }
