@@ -14,7 +14,24 @@ KST = timezone(timedelta(hours=9))
 KST_TZ = pytz.timezone("Asia/Seoul")
 
 ALERT_THRESHOLD_PCT = 5.0
-_alerted: dict[str, set] = {}  # {날짜: {당일 알림 완료 티커}}
+
+ALERTED_PATH = os.path.join(os.path.dirname(__file__), "..", "data", "_alerted.json")
+
+def _load_alerted() -> dict:
+    try:
+        with open(ALERTED_PATH, "r", encoding="utf-8") as f:
+            return {k: set(v) for k, v in json.load(f).items()}
+    except Exception:
+        return {}
+
+def _save_alerted(alerted: dict):
+    try:
+        with open(ALERTED_PATH, "w", encoding="utf-8") as f:
+            json.dump({k: list(v) for k, v in alerted.items()}, f)
+    except Exception as e:
+        print(f"[실시간알림] _alerted 저장 실패: {e}")
+
+_alerted: dict[str, set] = _load_alerted()  # 재시작 시 복원
 
 load_dotenv(dotenv_path=os.path.join(os.path.dirname(__file__), "..", ".env"))
 
@@ -94,6 +111,14 @@ async def realtime_watchlist_alert():
             kospi_dict = await loop.run_in_executor(None, fetch_kospi_top, 20)
             for ticker, name in kospi_dict.items():
                 if ticker not in watchlist_tickers:
+                    # 이름이 숫자만인 경우(코드) kr_stocks에서 한글명 조회
+                    if name.isdigit():
+                        try:
+                            _, kr_name = resolve_ticker(ticker.split(".")[0])
+                            if kr_name:
+                                name = kr_name
+                        except Exception:
+                            pass
                     kospi_extra.append({"ticker": ticker, "name": name, "_kospi_top": True})
         except Exception as e:
             print(f"[실시간알림] KOSPI 상위 20 로드 실패: {e}")
@@ -123,6 +148,7 @@ async def realtime_watchlist_alert():
             if result and abs(result["change_pct"]) >= ALERT_THRESHOLD_PCT:
                 new_alerts.append({**result, "name": stock["name"], "_kospi_top": stock["_kospi_top"]})
                 alerted_today.add(ticker)
+                _save_alerted(_alerted)
         except Exception as e:
             print(f"[실시간알림] {ticker} 처리 오류: {e}")
 
@@ -212,7 +238,8 @@ async def on_message(message: discord.Message):
             added = []
             for t in tickers:
                 if t not in [s["ticker"] for s in stocks]:
-                    stocks.append({"ticker": t, "added_at": datetime.now().isoformat()})
+                    _, resolved_name = resolve_ticker(t.split(".")[0] if "." in t else t)
+                    stocks.append({"ticker": t, "name": resolved_name or t, "added_at": datetime.now().isoformat()})
                     added.append(t)
             save_watchlist(stocks)
             if added:
