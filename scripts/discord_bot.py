@@ -47,11 +47,18 @@ def save_watchlist(stocks: list):
 
 def _market_open_now() -> bool:
     """현재 한국장(09:00~15:30) 또는 미국장(22:00~06:00) 중 하나라도 열려있으면 True"""
+    try:
+        import holidays
+        kr_holidays = holidays.KR()
+    except ImportError:
+        kr_holidays = {}
+
     now = datetime.now(KST)
     if now.weekday() >= 5:
         return False
     t = now.hour * 60 + now.minute
-    krx = 9 * 60 <= t <= 15 * 60 + 30
+    is_kr_holiday = now.date() in kr_holidays
+    krx = (not is_kr_holiday) and (9 * 60 <= t <= 15 * 60 + 30)
     us = t >= 22 * 60 or t < 6 * 60
     return krx or us
 
@@ -95,10 +102,21 @@ async def realtime_watchlist_alert():
     all_stocks += kospi_extra
 
     from yahoo_finance import get_intraday_change
+    now2 = datetime.now(KST)
+    t2 = now2.hour * 60 + now2.minute
+    is_krx_hour = 9 * 60 <= t2 <= 15 * 60 + 30
+    is_us_hour = t2 >= 22 * 60 or t2 < 6 * 60
+
     new_alerts = []
     for stock in all_stocks:
         ticker = stock["ticker"]
         if ticker in alerted_today:
+            continue
+        is_korean = ticker.endswith(".KS") or ticker.endswith(".KQ")
+        # 한국 종목은 한국장 시간에만, 미국 종목은 미국장 시간에만 체크
+        if is_korean and not is_krx_hour:
+            continue
+        if not is_korean and not is_us_hour:
             continue
         try:
             result = await loop.run_in_executor(None, get_intraday_change, ticker)

@@ -22,7 +22,7 @@ cp .env.example .env                 # 환경변수 파일 생성 후 편집
 선택 환경변수:
 - `PORT` — Express 서버 포트 (기본값: 3001)
 - `FRED_API_KEY` — TIPS 실질금리·HY 스프레드
-- `NOTION_API_KEY` + `NOTION_DATABASE_ID` — 뉴스레터 초안 Notion 저장
+- `NOTION_API_KEY` + `NOTION_DATABASE_ID_A` + `NOTION_DATABASE_ID_B` — 뉴스레터 A/B 별도 Notion DB 저장
 - `STIBEE_API_KEY` + `STIBEE_LIST_ID_A/B` — Stibee 이메일 캠페인 생성
 
 **Dashboard (Node.js)**
@@ -48,9 +48,14 @@ python scripts/portfolio_excel.py output/_temp_portfolio.json  # 포트폴리오
 
 **Newsletter (Python)**
 ```bash
-python scripts/run_newsletter.py A    # 뉴스레터 A 파이프라인 (수집→AI→Notion)
-python scripts/run_newsletter.py B    # 뉴스레터 B 파이프라인 (수집→AI→Notion)
+python scripts/run_newsletter.py A    # 뉴스레터 A 파이프라인 (수집→AI→검수→Notion)
+python scripts/run_newsletter.py B    # 뉴스레터 B 파이프라인 (수집→AI→검수→Notion)
+python scripts/newsletter_send.py A   # Stibee 구독자 목록 조회 + Gmail SMTP 발송
+python scripts/newsletter_send.py B   # 뉴스레터 B 발송
 ```
+
+선택 환경변수 (`newsletter_send.py` 발송에 필요):
+- `GMAIL_USER` + `GMAIL_APP_PASSWORD` — Gmail SMTP 발신자 계정 (앱 비밀번호 16자리, 없으면 발송 단계 즉시 실패)
 
 **Windows Task Scheduler (자동 실행)**
 - `StockResearch_DailyReport` — 매일 07:00 글로벌 지표 + 시장 감시 + 섹터 분석
@@ -71,7 +76,7 @@ docker-compose down          # 봇 종료
 ```
 데이터는 `./data:/app/data`, 스크립트는 `./scripts:/app/scripts`로 마운트 — 컨테이너 재시작 없이 스크립트 수정 즉시 반영. 로그는 JSON 드라이버로 10MB × 3개 로테이션.
 
-> **주의**: Docker는 Discord 봇(`discord_bot.py`)만 실행. `docker/entrypoint.sh`와 `docker/crontab`은 준비됐지만 현재 Dockerfile의 CMD에 연결되지 않음 — 스케줄 작업(07:00, 15:31, 뉴스레터)은 Windows Task Scheduler가 담당.
+> **NAS 배포 기준**: `docker/entrypoint.sh`가 Dockerfile CMD로 연결돼 있어 컨테이너 시작 시 cron 데몬 + Discord 봇이 함께 실행됨. cron 스케줄 작업(04:50·05:00·05:59·06:00 뉴스레터, 07:00 일간 리포트, 16:00 국장 리포트)은 컨테이너 내부 cron이 담당. Windows에서 로컬 실행 시에는 Windows Task Scheduler를 별도로 사용.
 
 ## Architecture
 
@@ -137,7 +142,7 @@ Full-stack TypeScript: React+Vite 프론트엔드, Express 백엔드, `data/` �
          ↓
   market_watcher.py       — Top 20 순위변동 감지 → #시장-알림, #일간-요약
   market_indicators.py    — 글로벌·한국 시장 지표 수집 및 전송 (run_global / run_korea)
-  korean_market_report.py — KOSPI 시총 상위 20(실시간) + 워치리스트 → #일간-요약 (15:31)
+  korean_market_report.py — KOSPI 시총 상위 20(실시간) + 워치리스트 → #일간-요약 (16:00)
   sector_analyst.py       — 섹터별 자금흐름 분석 → #섹터-동향
   technical_analyst.py    — RSI·MACD·이평선·52주 고저 (Yahoo Finance) → #종목-분석
   deep_analyst.py         — Claude API + web search 심층 분석 → #종목-분석
@@ -229,7 +234,8 @@ Full-stack TypeScript: React+Vite 프론트엔드, Express 백엔드, `data/` �
 run_newsletter.py [A|B]
   1. newsletter_collect.py  — RSS 피드 + 시장 데이터 수집 → data/_temp_newsletter_{ID}.json
   2. newsletter_ai.py       — Haiku(사실 추출) + Sonnet(본문 생성) → research/newsletter_{ID}_{YYYYMMDD}.md
-  3. newsletter_notion.py   — Notion DB에 초안 페이지 업로드 (NOTION_API_KEY 없으면 건너뜀)
+  3. newsletter_review.py   — Claude Sonnet 검수 → research/newsletter_{ID}_{YYYYMMDD}_final.md
+  4. newsletter_notion.py   — Notion DB에 최종본 업로드 (NOTION_API_KEY 없으면 건너뜀)
 ```
 Stibee 발송은 파이프라인에서 제외 — Notion 검수 후 Stibee 대시보드에서 수동 발송.
 

@@ -12,3 +12,6 @@ pytz
 # 뉴스레터 자동화
 feedparser>=6.0.0
 notion-client>=2.0.0
+
+# 공휴일 체크
+holidays>=0.46
