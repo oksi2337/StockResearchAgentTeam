@@ -37,7 +37,8 @@ npm run preview         # 빌드 결과물 미리보기 (Vite preview)
 **Discord Agent Team (Python)**
 ```bash
 python scripts/discord_bot.py                      # Discord 봇 실행 (수동)
-python scripts/run_daily.py                        # 미장 마감 후 전체 리포트 일괄 실행
+python scripts/run_daily.py                        # 미장 마감 후 전체 리포트 일괄 실행 (시총 수집 포함)
+python scripts/collect_marketcap_live.py           # yfinance로 글로벌 시총 실시간 수집 → data/ 저장
 python scripts/korean_market_report.py             # 국장 마감 리포트 단독 실행
 python scripts/technical_analyst.py AAPL TSLA      # 특정 종목 기술적 분석
 python scripts/deep_analyst.py "NVIDIA" NVDA       # 특정 종목 심층 분석
@@ -58,11 +59,11 @@ python scripts/newsletter_send.py B   # 뉴스레터 B 발송
 - `GMAIL_USER` + `GMAIL_APP_PASSWORD` — Gmail SMTP 발신자 계정 (앱 비밀번호 16자리, 없으면 발송 단계 즉시 실패)
 
 **Windows Task Scheduler (자동 실행)**
-- `StockResearch_DailyReport` — 매일 07:00 글로벌 지표 + 시장 감시 + 섹터 분석
-- `StockResearch_KoreanMarket` — 매일 16:00 국장 마감 리포트 + 한국 시장 지표
-- `StockResearch_DiscordBot` — 로그인 시 봇 자동 시작
-- `StockResearch_Newsletter_A` — 매일 04:50 뉴스레터 A 파이프라인
-- `StockResearch_Newsletter_B` — 매일 05:00 뉴스레터 B 파이프라인
+- `StockResearch_DiscordBot` — 로그인 시 봇 자동 시작 (로컬 테스트용)
+- `StockResearch_Newsletter_A` — 매일 04:50 뉴스레터 A 파이프라인 (NAS로 이전 권장)
+- `StockResearch_Newsletter_B` — 매일 05:00 뉴스레터 B 파이프라인 (NAS로 이전 권장)
+
+> **주의**: 07:00 일간 리포트와 16:00 국장 리포트는 NAS Docker cron이 담당. Windows Task Scheduler와 중복 등록 시 Discord 메시지가 두 번 전송됨.
 
 재등록 시: `scripts/setup_scheduler.ps1`을 관리자 PowerShell에서 실행.
 봇 재시작 (PowerShell): `schtasks /End /TN "StockResearch_DiscordBot"` → `schtasks /Run /TN "StockResearch_DiscordBot"`
@@ -76,7 +77,7 @@ docker-compose down          # 봇 종료
 ```
 데이터는 `./data:/app/data`, 스크립트는 `./scripts:/app/scripts`로 마운트 — 컨테이너 재시작 없이 스크립트 수정 즉시 반영. 로그는 JSON 드라이버로 10MB × 3개 로테이션.
 
-> **NAS 배포 기준**: `docker/entrypoint.sh`가 Dockerfile CMD로 연결돼 있어 컨테이너 시작 시 cron 데몬 + Discord 봇이 함께 실행됨. cron 스케줄 작업(04:50·05:00·05:59·06:00 뉴스레터, 07:00 일간 리포트, 16:00 국장 리포트)은 컨테이너 내부 cron이 담당. Windows에서 로컬 실행 시에는 Windows Task Scheduler를 별도로 사용.
+> **NAS 배포 기준**: `docker/entrypoint.sh`가 Dockerfile CMD로 연결돼 있어 컨테이너 시작 시 cron 데몬 + Discord 봇이 함께 실행됨. cron 스케줄 작업(04:50·05:00·05:59·06:00 뉴스레터, 07:00 일간 리포트, 16:00 국장 리포트)은 컨테이너 내부 cron이 담당. PC가 꺼져 있어도 NAS에서 모든 자동화가 실행되는 것이 목표. Windows Task Scheduler와 중복 등록 금지 — Discord 메시지 이중 발송 원인.
 
 ## Architecture
 
@@ -127,29 +128,30 @@ Full-stack TypeScript: React+Vite 프론트엔드, Express 백엔드, `data/` �
 
 | 시각 | 실행 주체 | 내용 | 채널 |
 |------|-----------|------|------|
-| 07:00 | Task Scheduler → `run_daily.py` | 글로벌 지수·변동성 + 금리·통화·원자재 | #일간-요약 |
-| 07:00 | Task Scheduler → `run_daily.py` | 시총 Top 20 일간 요약 | #일간-요약 |
-| 07:00 | Task Scheduler → `run_daily.py` | Top 10 순위변동 감지 (변동 시만) | #시장-알림 |
-| 07:00 | Task Scheduler → `run_daily.py` | 워치리스트 급변 ±5% (있을 때만) | #시장-알림 |
-| 07:00 | Task Scheduler → `run_daily.py` | 섹터별 자금흐름 | #섹터-동향 |
+| 07:00 | NAS Docker cron → `run_daily.py` | 시총 수집(yfinance) + 글로벌 지수·변동성 + 금리·통화·원자재 | #일간-요약 |
+| 07:00 | NAS Docker cron → `run_daily.py` | 시총 Top 20 일간 요약 | #일간-요약 |
+| 07:00 | NAS Docker cron → `run_daily.py` | Top 10 순위변동 감지 (변동 시만) | #시장-알림 |
+| 07:00 | NAS Docker cron → `run_daily.py` | 워치리스트 급변 ±5% (있을 때만) | #시장-알림 |
+| 07:00 | NAS Docker cron → `run_daily.py` | 섹터별 자금흐름 | #섹터-동향 |
 | 장중 3분 주기 | Discord 봇 내부 | 워치리스트 전체 + KOSPI 상위 20 급변 ±5% (평일, 한국장 09:00~15:30 / 미국장 22:00~06:00) | #시장-알림 |
-| 16:00 | Task Scheduler → `korean_market_report.py` | 국장 마감 리포트 (KOSPI 상위 20 + 워치리스트 한국 종목) + 한국 시장 지표 | #일간-요약 |
+| 16:00 | NAS Docker cron → `korean_market_report.py` | 국장 마감 리포트 (KOSPI 상위 20 + 워치리스트 한국 종목) + 한국 시장 지표 | #일간-요약 |
 
 **에이전트 흐름**
 
 ```
-[Task Scheduler 자동 / Discord 슬래시 커맨드]
+[NAS Docker cron 자동 / Discord 슬래시 커맨드]
          ↓
-  market_watcher.py       — Top 20 순위변동 감지 → #시장-알림, #일간-요약
-  market_indicators.py    — 글로벌·한국 시장 지표 수집 및 전송 (run_global / run_korea)
-  korean_market_report.py — KOSPI 시총 상위 20(실시간) + 워치리스트 → #일간-요약 (16:00)
-  sector_analyst.py       — 섹터별 자금흐름 분석 → #섹터-동향
-  technical_analyst.py    — RSI·MACD·이평선·52주 고저 (Yahoo Finance) → #종목-분석
-  deep_analyst.py         — Claude API + web search 심층 분석 → #종목-분석
+  collect_marketcap_live.py — yfinance로 글로벌 시총 ~110개 실시간 수집 → data/marketcap-YYYY-MM-DD.json
+  market_watcher.py         — Top 20 순위변동 감지 → #시장-알림, #일간-요약
+  market_indicators.py      — 글로벌·한국 시장 지표 수집 및 전송 (run_global / run_korea)
+  korean_market_report.py   — KOSPI 시총 상위 20(실시간) + 워치리스트 → #일간-요약 (16:00)
+  sector_analyst.py         — 섹터별 자금흐름 분석 → #섹터-동향
+  technical_analyst.py      — RSI·MACD·이평선·52주 고저 (Yahoo Finance) → #종목-분석
+  deep_analyst.py           — Claude API + web search 심층 분석 → #종목-분석
          ↑
-  discord_bot.py          — 슬래시 커맨드 수신 + 장중 3분 주기 실시간 급변 감지
-  kr_stocks.py            — 한국 종목명 → 티커 변환 유틸 (24h 캐시)
-  yahoo_finance.py        — Yahoo Finance 래퍼 (fast_info 우선, 5d 일별 폴백)
+  discord_bot.py            — 슬래시 커맨드 수신 + 장중 3분 주기 실시간 급변 감지
+  kr_stocks.py              — 한국 종목명 → 티커 변환 유틸 (24h 캐시)
+  yahoo_finance.py          — Yahoo Finance 래퍼 (fast_info 우선, 5d 일별 폴백)
 ```
 
 **Discord 슬래시 커맨드**
