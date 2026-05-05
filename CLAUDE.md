@@ -237,10 +237,10 @@ run_newsletter.py [A|B]
   3. newsletter_review.py   — Claude Sonnet 검수 → research/newsletter_{ID}_{YYYYMMDD}_final.md
   4. newsletter_notion.py   — Notion DB에 최종본 업로드 (NOTION_API_KEY 없으면 건너뜀)
 ```
-Stibee 발송은 파이프라인에서 제외 — Notion 검수 후 Stibee 대시보드에서 수동 발송.
+Gmail SMTP 자동 발송: A는 05:59, B는 06:00에 `newsletter_send.py`가 자동 실행.
 
 **뉴스레터 구분**
-- A: 글로벌 정치경제 — 월~금 04:00 자동 실행, 06:30 수동 발송
-- B: AI 트렌드 — 화·목·토 04:30 자동 실행, 07:00 수동 발송
+- A: 글로벌 정치경제 — 매일 04:50 자동 실행, 05:59 Gmail 자동 발송
+- B: AI 트렌드 — 매일 05:00 자동 실행, 06:00 Gmail 자동 발송
 
 **설정 파일**: `data/newsletter_config_{A|B}.json` — 구독자 목록·RSS 소스·템플릿 등 뉴스레터별 설정.
