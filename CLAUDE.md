@@ -219,7 +219,7 @@ Full-stack TypeScript: React+Vite 프론트엔드, Express 백엔드, `data/` �
 **portfolio-analyzer 동작**:
 - 인자 2개: 첫 번째=목표비중 이미지, 두 번째=보유현황 이미지 → `data/target_portfolio.json` 갱신 후 Excel
 - 인자 1개: `data/target_portfolio.json` 기존값 사용, 인자=보유현황 이미지 → Excel
-- 매입금액이 이미지에 없으면 매입가 × 보유수량으로 계산. 환율 미표시 시 역산 또는 1,400원 가정.
+- 보유현황에서 추출하는 값은 **매입금액** 기준 (평가금액 아님). 매입금액 미표시 시 매입가 × 보유수량으로 계산. 환율 미표시 시 역산 또는 1,400원 가정.
 - `data/target_portfolio.json` — 목표 포트폴리오 설정 (`total_investment`, `stocks[]` 배열). 종목명 매칭은 부분 일치 허용.
 - 출력: `output/portfolio_status_YYYYMMDD_HHmm.xlsx`
 
