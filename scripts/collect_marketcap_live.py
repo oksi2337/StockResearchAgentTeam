@@ -13,14 +13,12 @@ import yfinance as yf
 DATA_DIR = Path(__file__).parent.parent / "data"
 KST = timezone(timedelta(hours=9))
 
-# 글로벌 시총 상위 ~110개 유니버스: (ticker, name, sector, country)
+# 글로벌 시총 상위 ~120개 유니버스: (ticker, name, sector, country)
 UNIVERSE = [
     # --- Technology ---
     ("NVDA", "Nvidia", "Technology", "US"),
     ("AAPL", "Apple", "Technology", "US"),
     ("MSFT", "Microsoft", "Technology", "US"),
-    ("GOOGL", "Alphabet", "Technology", "US"),
-    ("META", "Meta Platforms", "Technology", "US"),
     ("AVGO", "Broadcom", "Technology", "US"),
     ("ORCL", "Oracle", "Technology", "US"),
     ("ADBE", "Adobe", "Technology", "US"),
@@ -38,15 +36,19 @@ UNIVERSE = [
     ("IBM", "IBM", "Technology", "US"),
     ("UBER", "Uber", "Technology", "US"),
     ("PLTR", "Palantir", "Technology", "US"),
-    ("NFLX", "Netflix", "Technology", "US"),
-    ("T", "AT&T", "Technology", "US"),
-    ("VZ", "Verizon", "Technology", "US"),
-    ("CMCSA", "Comcast", "Technology", "US"),
     ("TSM", "TSMC", "Technology", "TW"),
     ("ASML", "ASML", "Technology", "NL"),
     ("SAP", "SAP", "Technology", "DE"),
     ("005930.KS", "Samsung Electronics", "Technology", "KR"),
-    ("0700.HK", "Tencent", "Technology", "CN"),
+    # --- Communication Services ---
+    ("GOOGL", "Alphabet", "Communication Services", "US"),
+    ("META", "Meta Platforms", "Communication Services", "US"),
+    ("NFLX", "Netflix", "Communication Services", "US"),
+    ("DIS", "Disney", "Communication Services", "US"),
+    ("T", "AT&T", "Communication Services", "US"),
+    ("VZ", "Verizon", "Communication Services", "US"),
+    ("CMCSA", "Comcast", "Communication Services", "US"),
+    ("0700.HK", "Tencent", "Communication Services", "CN"),
     # --- Consumer ---
     ("AMZN", "Amazon", "Consumer", "US"),
     ("TSLA", "Tesla", "Consumer", "US"),
@@ -61,14 +63,12 @@ UNIVERSE = [
     ("PEP", "PepsiCo", "Consumer", "US"),
     ("PM", "Philip Morris", "Consumer", "US"),
     ("BKNG", "Booking Holdings", "Consumer", "US"),
-    ("DIS", "Disney", "Consumer", "US"),
     ("BABA", "Alibaba", "Consumer", "CN"),
     ("PDD", "PDD Holdings", "Consumer", "CN"),
     ("TM", "Toyota", "Consumer", "JP"),
     ("MC.PA", "LVMH", "Consumer", "FR"),
     ("RMS.PA", "Hermès", "Consumer", "FR"),
     # --- Finance ---
-    ("BRK-B", "Berkshire Hathaway", "Finance", "US"),
     ("JPM", "JPMorgan Chase", "Finance", "US"),
     ("V", "Visa", "Finance", "US"),
     ("MA", "Mastercard", "Finance", "US"),
@@ -83,6 +83,8 @@ UNIVERSE = [
     ("RY", "Royal Bank of Canada", "Finance", "CA"),
     ("TD", "TD Bank", "Finance", "CA"),
     ("CBA.AX", "Commonwealth Bank", "Finance", "AU"),
+    # --- Conglomerate ---
+    ("BRK-B", "Berkshire Hathaway", "Conglomerate", "US"),
     # --- Healthcare ---
     ("LLY", "Eli Lilly", "Healthcare", "US"),
     ("UNH", "UnitedHealth", "Healthcare", "US"),
@@ -126,9 +128,20 @@ UNIVERSE = [
     ("DE", "Deere & Company", "Industrial", "US"),
     ("LMT", "Lockheed Martin", "Industrial", "US"),
     ("UNP", "Union Pacific", "Industrial", "US"),
-    ("LIN", "Linde", "Industrial", "US"),
-    ("BHP", "BHP Group", "Industrial", "AU"),
     ("SIE.DE", "Siemens", "Industrial", "DE"),
+    # --- Materials ---
+    ("LIN", "Linde", "Materials", "US"),
+    ("BHP", "BHP Group", "Materials", "AU"),
+    ("APD", "Air Products", "Materials", "US"),
+    ("FCX", "Freeport-McMoRan", "Materials", "US"),
+    ("NEM", "Newmont", "Materials", "US"),
+    # --- Utilities ---
+    ("NEE", "NextEra Energy", "Utilities", "US"),
+    ("DUK", "Duke Energy", "Utilities", "US"),
+    ("SO", "Southern Company", "Utilities", "US"),
+    # --- Real Estate ---
+    ("AMT", "American Tower", "Real Estate", "US"),
+    ("PLD", "Prologis", "Real Estate", "US"),
 ]
 
 # 로컬 통화 환산이 필요한 티커 (yfinance가 로컬 통화로 market_cap 반환)

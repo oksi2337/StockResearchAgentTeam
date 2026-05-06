@@ -27,6 +27,11 @@ SECTOR_EMOJI = {
     "Energy": "⚡",
     "Consumer": "🛍️",
     "Industrial": "🏭",
+    "Communication Services": "📡",
+    "Materials": "⚗️",
+    "Utilities": "💡",
+    "Real Estate": "🏢",
+    "Conglomerate": "🏛️",
     "Other": "🔷",
 }
 

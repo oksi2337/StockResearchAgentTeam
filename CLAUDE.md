@@ -59,14 +59,19 @@ python scripts/newsletter_send.py B   # 뉴스레터 B 발송
 - `GMAIL_USER` + `GMAIL_APP_PASSWORD` — Gmail SMTP 발신자 계정 (앱 비밀번호 16자리, 없으면 발송 단계 즉시 실패)
 
 **Windows Task Scheduler (자동 실행)**
-- `StockResearch_DiscordBot` — 로그인 시 봇 자동 시작 (로컬 테스트용)
+- `StockResearch_DiscordBot` — ~~로그인 시 봇 자동 시작~~ **비활성화됨** (2026-05-06 — NAS를 주봇으로 사용, 이중 실행 시 10062 오류)
 - `StockResearch_Newsletter_A` — 매일 04:50 뉴스레터 A 파이프라인 (NAS로 이전 권장)
 - `StockResearch_Newsletter_B` — 매일 05:00 뉴스레터 B 파이프라인 (NAS로 이전 권장)
 
 > **주의**: 07:00 일간 리포트와 16:00 국장 리포트는 NAS Docker cron이 담당. Windows Task Scheduler와 중복 등록 시 Discord 메시지가 두 번 전송됨.
+> **이중 봇 문제**: PC 봇과 NAS 봇이 동시에 실행되면 Discord가 같은 슬래시 커맨드 인터랙션을 양쪽에 전달해 한쪽이 `10062 Unknown interaction` 오류로 실패함. NAS가 주봇 — PC Task Scheduler의 `StockResearch_DiscordBot`은 비활성화 상태 유지. `discord_bot.py`의 `_defer()` 헬퍼가 10062를 조용히 무시하도록 처리돼 있음.
 
 재등록 시: `scripts/setup_scheduler.ps1`을 관리자 PowerShell에서 실행.
-봇 재시작 (PowerShell): `schtasks /End /TN "StockResearch_DiscordBot"` → `schtasks /Run /TN "StockResearch_DiscordBot"`
+PC 봇 중지: `schtasks /End /TN "StockResearch_DiscordBot"`
+
+**NAS 컨테이너 경로**: `/volume1/docker/stock` (주의: `/volume1/docker/stock-bot`은 구버전 디렉토리)
+- WinSCP 스크립트 업로드: `D:\business\STOCK\scripts\` → `/volume1/docker/stock/scripts/`
+- 업로드 후 재시작 불필요 (볼륨 마운트로 즉시 반영). 단 `docker/` 하위 파일 변경 시 `sudo docker restart stock-bot` 필요.
 
 **Docker (Discord 봇 컨테이너)**
 ```bash
@@ -75,9 +80,13 @@ docker-compose up -d         # 백그라운드로 봇 실행
 docker-compose logs -f       # 실시간 로그 확인
 docker-compose down          # 봇 종료
 ```
-볼륨 마운트: `./data:/app/data`, `./scripts:/app/scripts`, `./research:/app/research`, `./logs:/app/logs` — 컨테이너 재시작 없이 스크립트 수정 즉시 반영. 로그는 JSON 드라이버로 10MB × 3개 로테이션.
+볼륨 마운트: `./data:/app/data`, `./scripts:/app/scripts`, `./research:/app/research`, `./logs:/app/logs`, `./.env:/app/.env:ro` — 컨테이너 재시작 없이 스크립트 수정 즉시 반영. 로그는 JSON 드라이버로 10MB × 3개 로테이션.
 
-> **NAS 배포 기준**: `docker/entrypoint.sh`가 Dockerfile CMD로 연결돼 있어 컨테이너 시작 시 cron 데몬 + Discord 봇이 함께 실행됨. cron 스케줄 작업(04:50·05:00·05:59·06:00 뉴스레터, 07:00 일간 리포트, 16:00 국장 리포트)은 컨테이너 내부 cron이 담당. PC가 꺼져 있어도 NAS에서 모든 자동화가 실행되는 것이 목표. Windows Task Scheduler와 중복 등록 금지 — Discord 메시지 이중 발송 원인.
+> **NAS 최초 배포 시**: `logs/` 디렉토리가 없으면 컨테이너 시작 실패. `mkdir -p /volume1/docker/stock/logs` 먼저 실행할 것.
+
+> **cron 동작 확인**: `python:3.12-slim` 이미지에는 `ps` 명령어가 없음. cron 실행 여부는 `docker exec stock-bot /usr/sbin/cron` 실행 시 `can't lock /var/run/crond.pid` 메시지로 확인 (이미 실행 중이라는 의미).
+
+> **NAS 배포 기준**: `docker/entrypoint.sh`가 Dockerfile CMD로 연결돼 있어 컨테이너 시작 시 cron 데몬 + Discord 봇이 함께 실행됨. cron 스케줄 작업(04:50·05:00·05:59·06:00 뉴스레터, 07:00 일간 리포트, 16:00 국장 리포트)은 컨테이너 내부 cron이 담당. cron 스크립트는 `load_dotenv()`로 `/app/.env`를 읽으므로 반드시 `.env` 볼륨 마운트가 있어야 함. PC가 꺼져 있어도 NAS에서 모든 자동화가 실행되는 것이 목표. Windows Task Scheduler와 중복 등록 금지 — Discord 메시지 이중 발송 원인.
 
 ## Architecture
 
@@ -110,7 +119,7 @@ Full-stack TypeScript: React+Vite 프론트엔드, Express 백엔드, `data/` �
 **데이터 스키마** (`src/types.ts`):
 - `StockEntry`: rank, name, ticker, exchange, country, sector, market_cap_usd, market_cap_krw, price_usd, change_1d_pct, collected_at
 - `DayData`: date, rate (KRW/USD), data[]
-- Sectors: Technology, Finance, Healthcare, Energy, Consumer, Industrial, Other
+- Sectors: Technology, Communication Services, Consumer, Finance, Conglomerate, Healthcare, Energy, Industrial, Materials, Utilities, Real Estate, Other
 
 **UI 규칙**: `src/index.css` CSS 변수 다크 테마 — CSS 프레임워크 추가 금지. UI 텍스트는 한국어. 상승 `#3fb950`, 하락 `#f85149`. 개발 모드에서 `/api/*` 는 Vite가 `localhost:3001`로 프록시.
 
@@ -130,8 +139,7 @@ Full-stack TypeScript: React+Vite 프론트엔드, Express 백엔드, `data/` �
 |------|-----------|------|------|
 | 07:00 | NAS Docker cron → `run_daily.py` | 시총 수집(yfinance) + 글로벌 지수·변동성 + 금리·통화·원자재 | #일간-요약 |
 | 07:00 | NAS Docker cron → `run_daily.py` | 시총 Top 20 일간 요약 | #일간-요약 |
-| 07:00 | NAS Docker cron → `run_daily.py` | Top 10 순위변동 감지 (변동 시만) | #시장-알림 |
-| 07:00 | NAS Docker cron → `run_daily.py` | 워치리스트 급변 ±5% (있을 때만) | #시장-알림 |
+| 07:00 | NAS Docker cron → `run_daily.py` | Top 10 순위변동 감지 (변동 시만) | #일간-요약 |
 | 07:00 | NAS Docker cron → `run_daily.py` | 섹터별 자금흐름 | #섹터-동향 |
 | 장중 3분 주기 | Discord 봇 내부 | 워치리스트 전체 + KOSPI 상위 20 급변 ±5% (평일, 한국장 09:00~15:30 / 미국장 22:00~06:00) | #시장-알림 |
 | 16:00 | NAS Docker cron → `korean_market_report.py` | 국장 마감 리포트 (KOSPI 상위 20 + 워치리스트 한국 종목) + 한국 시장 지표 | #일간-요약 |
@@ -141,8 +149,8 @@ Full-stack TypeScript: React+Vite 프론트엔드, Express 백엔드, `data/` �
 ```
 [NAS Docker cron 자동 / Discord 슬래시 커맨드]
          ↓
-  collect_marketcap_live.py — yfinance로 글로벌 시총 ~110개 실시간 수집 → data/marketcap-YYYY-MM-DD.json
-  market_watcher.py         — Top 20 순위변동 감지 → #시장-알림, #일간-요약
+  collect_marketcap_live.py — yfinance로 글로벌 시총 ~120개 실시간 수집 → data/marketcap-YYYY-MM-DD.json
+  market_watcher.py         — Top 20 순위변동 감지 → #일간-요약
   market_indicators.py      — 글로벌·한국 시장 지표 수집 및 전송 (run_global / run_korea)
   korean_market_report.py   — KOSPI 시총 상위 20(실시간) + 워치리스트 → #일간-요약 (16:00)
   sector_analyst.py         — 섹터별 자금흐름 분석 → #섹터-동향
@@ -203,7 +211,7 @@ Full-stack TypeScript: React+Vite 프론트엔드, Express 백엔드, `data/` �
 | `/stock-agent [기업명] [티커]` | Sonnet 4.6 | 7단계 WebSearch → Excel 개별+포트폴리오 리포트 |
 | `/deep-analyst [기업명] [티커]` | Haiku 4.5 | `deep_analyst.py` 실행 → Discord #종목-분석 (1~2분) |
 | `/technical-analyst [티커...]` | Haiku 4.5 | `technical_analyst.py` 실행 → Discord #종목-분석 |
-| `/market-watcher` | Haiku 4.5 | `market_watcher.py` 실행 → Discord #시장-알림·#일간-요약 |
+| `/market-watcher` | Haiku 4.5 | `market_watcher.py` 실행 → Discord #일간-요약 |
 | `/korean-market` | Haiku 4.5 | `korean_market_report.py` 실행 → Discord #일간-요약 |
 | `/sector-analyst` | Haiku 4.5 | `sector_analyst.py` 실행 → Discord #섹터-동향 |
 | `/portfolio-analyzer [이미지1] [이미지2]` | Sonnet 4.6 | 스크린샷에서 목표비중·보유현황 추출 → Excel 리포트 생성 |
@@ -219,8 +227,10 @@ Full-stack TypeScript: React+Vite 프론트엔드, Express 백엔드, `data/` �
 **portfolio-analyzer 동작**:
 - 인자 2개: 첫 번째=목표비중 이미지, 두 번째=보유현황 이미지 → `data/target_portfolio.json` 갱신 후 Excel
 - 인자 1개: `data/target_portfolio.json` 기존값 사용, 인자=보유현황 이미지 → Excel
+- **보유현황 이미지 여러 장**: 목표비중 1장 + 보유현황 N장 전달 가능. 여러 계좌(국내계좌1, 국내계좌2, 미국계좌 등) 스크린샷을 모두 전달하면 합산 처리. 동일 종목이 여러 계좌에 있으면 매입금액 합산.
 - 보유현황에서 추출하는 값은 **매입금액** 기준 (평가금액 아님). 매입금액 미표시 시 매입가 × 보유수량으로 계산. 환율 미표시 시 역산 또는 1,400원 가정.
-- `data/target_portfolio.json` — 목표 포트폴리오 설정 (`total_investment`, `stocks[]` 배열). 종목명 매칭은 부분 일치 허용.
+- 보유수량 미표시 이미지(일부 앱)는 분석 제외 후 사용자에게 안내.
+- `data/target_portfolio.json` — 목표 포트폴리오 설정 (`total_investment`, `stocks[]` 배열). 종목명 매칭은 부분 일치 허용. 브로커 화면 약칭(예: `LIG디펜스앤에어` → `LIG넥스원`)은 수동 매핑 후 명시.
 - 출력: `output/portfolio_status_YYYYMMDD_HHmm.xlsx`
 
 ---

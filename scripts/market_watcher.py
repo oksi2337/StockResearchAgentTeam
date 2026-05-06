@@ -145,7 +145,7 @@ async def send_daily_summary(data: dict, rank_changes: list):
             "color": 0xf0e040,
             "timestamp": datetime.now().isoformat(),
         }
-        await send_discord_message(CH_MARKET_ALERT, embeds=[alert_embed])
+        await send_discord_message(CH_DAILY_SUMMARY, embeds=[alert_embed])
 
 
 async def check_watchlist_alerts(data: dict):
@@ -181,7 +181,7 @@ async def check_watchlist_alerts(data: dict):
             "color": 0xff6b35,
             "timestamp": datetime.now().isoformat(),
         }
-        await send_discord_message(CH_MARKET_ALERT, embeds=[embed])
+        await send_discord_message(CH_DAILY_SUMMARY, embeds=[embed])
 
 
 async def run():
@@ -196,7 +196,6 @@ async def run():
     rank_changes = detect_rank_changes(current, previous)
 
     await send_daily_summary(current, rank_changes)
-    await check_watchlist_alerts(current)
 
     print(f"[Market Watcher] 완료: 순위변동 {len(rank_changes)}건")
 

@@ -204,7 +204,7 @@ async def on_ready():
     scheduler = AsyncIOScheduler(timezone=KST_TZ)
     scheduler.add_job(scheduled_daily, CronTrigger(hour=7, minute=0, timezone=KST_TZ))
     scheduler.start()
-    print("[스케줄] 07:00 일간 리포트 등록 완료 (KST) — 15:31 국장 리포트는 Task Scheduler 담당")
+    print("[스케줄] 07:00 일간 리포트 등록 완료 (KST) — 16:00 국장 리포트는 NAS cron 담당")
 
 
 # ── 자연어 메시지 처리 ───────────────────────────────────────
@@ -286,6 +286,7 @@ async def on_message(message: discord.Message):
 
 async def run_stock_analysis(ticker: str, reply_channel):
     """기술적 분석 실행 후 Discord에 전송"""
+    print(f"[분석] {ticker} 시작")
     try:
         loop = asyncio.get_running_loop()
         from yahoo_finance import get_technical_indicators, get_fundamentals
@@ -293,13 +294,24 @@ async def run_stock_analysis(ticker: str, reply_channel):
         tech = await loop.run_in_executor(None, get_technical_indicators, ticker)
         fund = await loop.run_in_executor(None, get_fundamentals, ticker)
 
-        channel = bot.get_channel(CH_STOCK_ANALYSIS)
-        if channel and tech:
-            embed = build_analysis_embed(ticker, tech, fund)
-            await channel.send(embed=embed)
+        channel = bot.get_channel(CH_STOCK_ANALYSIS) or await bot.fetch_channel(CH_STOCK_ANALYSIS)
+        if not tech:
+            print(f"[분석] {ticker} 데이터 없음 (Yahoo Finance 실패)")
+            await channel.send(f"❌ **{ticker}** 기술적 분석 실패 — Yahoo Finance 데이터 수집 오류")
+            return
+        embed = build_analysis_embed(ticker, tech, fund)
+        await channel.send(embed=embed)
+        print(f"[분석] {ticker} 완료")
     except Exception as e:
-        if reply_channel:
-            await reply_channel.send(f"❌ {ticker} 분석 중 오류: {e}")
+        print(f"[분석] {ticker} 오류: {e}")
+        target = reply_channel
+        if target is None:
+            try:
+                target = bot.get_channel(CH_STOCK_ANALYSIS) or await bot.fetch_channel(CH_STOCK_ANALYSIS)
+            except Exception:
+                pass
+        if target:
+            await target.send(f"❌ **{ticker}** 분석 중 오류: {e}")
 
 
 def build_analysis_embed(ticker: str, tech: dict, fund: dict) -> discord.Embed:
@@ -389,19 +401,36 @@ async def resolve_or_reply(interaction: discord.Interaction, input_str: str) -> 
 guild_obj = discord.Object(id=GUILD_ID)
 
 
+async def _defer(interaction: discord.Interaction) -> bool:
+    """defer() 실행. 10062(다른 봇 인스턴스가 이미 처리) 시 False 반환."""
+    try:
+        await interaction.response.defer()
+        return True
+    except discord.NotFound:
+        print(f"[슬래시] 인터랙션 이미 처리됨(10062) — PC 봇과 NAS 봇 동시 실행 중일 수 있음")
+        return False
+    except Exception as e:
+        print(f"[슬래시] defer 실패: {e}")
+        return False
+
+
 @bot.tree.command(guild=guild_obj, name="워치리스트", description="현재 워치리스트 조회")
 async def slash_watchlist(interaction: discord.Interaction):
-    stocks = load_watchlist()
-    if stocks:
-        ticker_list = "\n".join([f"• {s.get('name', s['ticker'])} (`{s['ticker']}`)" for s in stocks])
-        await interaction.response.send_message(f"**📋 현재 워치리스트** ({len(stocks)}개)\n{ticker_list}")
-    else:
-        await interaction.response.send_message("워치리스트가 비어있어요.")
+    try:
+        stocks = load_watchlist()
+        if stocks:
+            ticker_list = "\n".join([f"• {s.get('name', s['ticker'])} (`{s['ticker']}`)" for s in stocks])
+            await interaction.response.send_message(f"**📋 현재 워치리스트** ({len(stocks)}개)\n{ticker_list}")
+        else:
+            await interaction.response.send_message("워치리스트가 비어있어요.")
+    except discord.NotFound:
+        print("[슬래시] 워치리스트 인터랙션 이미 처리됨(10062)")
 
 
 @bot.tree.command(guild=guild_obj, name="추가", description="워치리스트에 종목 추가 (종목명 또는 티커)")
 async def slash_add(interaction: discord.Interaction, 종목: str):
-    await interaction.response.defer()
+    if not await _defer(interaction):
+        return
     ticker, name = await resolve_or_reply(interaction, 종목)
     if not ticker:
         return
@@ -416,7 +445,8 @@ async def slash_add(interaction: discord.Interaction, 종목: str):
 
 @bot.tree.command(guild=guild_obj, name="삭제", description="워치리스트에서 종목 제거 (종목명 또는 티커)")
 async def slash_remove(interaction: discord.Interaction, 종목: str):
-    await interaction.response.defer()
+    if not await _defer(interaction):
+        return
     ticker, name = await resolve_or_reply(interaction, 종목)
     if not ticker:
         return
@@ -432,7 +462,8 @@ async def slash_remove(interaction: discord.Interaction, 종목: str):
 
 @bot.tree.command(guild=guild_obj, name="분석", description="기술적 분석 (종목명 또는 티커, 빠름)")
 async def slash_analyze(interaction: discord.Interaction, 종목: str):
-    await interaction.response.defer()
+    if not await _defer(interaction):
+        return
     ticker, name = await resolve_or_reply(interaction, 종목)
     if not ticker:
         return
@@ -442,7 +473,8 @@ async def slash_analyze(interaction: discord.Interaction, 종목: str):
 
 @bot.tree.command(guild=guild_obj, name="심층분석", description="심층 분석 — 뉴스·펀더멘털·증권사 의견 포함 (1~2분, 종목명 또는 티커)")
 async def slash_deep_analyze(interaction: discord.Interaction, 종목: str):
-    await interaction.response.defer()
+    if not await _defer(interaction):
+        return
     ticker, name = await resolve_or_reply(interaction, 종목)
     if not ticker:
         return
@@ -451,12 +483,25 @@ async def slash_deep_analyze(interaction: discord.Interaction, 종목: str):
         f"뉴스·펀더멘털·증권사 의견 포함 — 1~2분 후 #종목-분석 채널을 확인하세요."
     )
     from deep_analyst import analyze
-    asyncio.create_task(analyze(name or ticker, ticker))
+
+    async def _run_deep():
+        try:
+            await analyze(name or ticker, ticker)
+        except Exception as e:
+            print(f"[심층분석] {ticker} 오류: {e}")
+            try:
+                ch = bot.get_channel(CH_STOCK_ANALYSIS) or await bot.fetch_channel(CH_STOCK_ANALYSIS)
+                await ch.send(f"❌ **{ticker}** 심층분석 오류: {e}")
+            except Exception:
+                pass
+
+    asyncio.create_task(_run_deep())
 
 
 @bot.tree.command(guild=guild_obj, name="지표", description="주요 시장 지표 현황 (글로벌 지수·금리·통화·한국 시장)")
 async def slash_indicators(interaction: discord.Interaction):
-    await interaction.response.defer()
+    if not await _defer(interaction):
+        return
     import traceback as _tb
 
     try:
