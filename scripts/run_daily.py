@@ -22,16 +22,20 @@ async def main():
 
     # 1. 시총 데이터 수집 (NAS에서도 독립 실행 — data/ 파일 불필요)
     loop = asyncio.get_running_loop()
-    await loop.run_in_executor(None, collect_and_save)
+    result = await loop.run_in_executor(None, collect_and_save)
     await asyncio.sleep(2)
 
+    # 2. 글로벌 시장 지표 (시총 수집 성패 무관하게 실행)
     await run_indicators_global()
     await asyncio.sleep(2)
 
-    await run_watcher()
-    await asyncio.sleep(2)
-
-    await run_sector()
+    # 3. 시총 요약·섹터 분석: 수집 실패 시 오래된 데이터를 발송하지 않도록 건너뜀
+    if result is None:
+        print("[경고] 시총 데이터 수집 실패 — 시장 요약·섹터 분석 건너뜀 (stale 데이터 방지)")
+    else:
+        await run_watcher()
+        await asyncio.sleep(2)
+        await run_sector()
 
     print("=" * 50)
     print("일간 리서치 완료")

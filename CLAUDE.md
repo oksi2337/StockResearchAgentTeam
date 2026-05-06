@@ -59,14 +59,16 @@ python scripts/newsletter_send.py B   # 뉴스레터 B 발송
 - `GMAIL_USER` + `GMAIL_APP_PASSWORD` — Gmail SMTP 발신자 계정 (앱 비밀번호 16자리, 없으면 발송 단계 즉시 실패)
 
 **Windows Task Scheduler (자동 실행)**
-- `StockResearch_DiscordBot` — ~~로그인 시 봇 자동 시작~~ **비활성화됨** (2026-05-06 — NAS를 주봇으로 사용, 이중 실행 시 10062 오류)
+- `StockResearch_DiscordBot` — ~~로그인 시 봇 자동 시작~~ **비활성화됨** (NAS를 주봇으로 사용, 이중 실행 시 10062 오류)
+- `StockResearch_DailyReport` — ~~07:00 일간 리포트~~ **비활성화됨** (NAS Docker cron이 담당. 활성화 시 NAS와 중복 전송 발생. `StartWhenAvailable=true`라 PC 켜지는 순간 즉시 실행되므로 반드시 비활성화)
+- `StockResearch_KoreanMarket` — ~~16:00 국장 마감 리포트~~ **비활성화됨** (NAS Docker cron이 담당. 동일 이유)
 - `StockResearch_Newsletter_A` — 매일 04:50 뉴스레터 A 파이프라인 (NAS로 이전 권장)
 - `StockResearch_Newsletter_B` — 매일 05:00 뉴스레터 B 파이프라인 (NAS로 이전 권장)
 
 > **주의**: 07:00 일간 리포트와 16:00 국장 리포트는 NAS Docker cron이 담당. Windows Task Scheduler와 중복 등록 시 Discord 메시지가 두 번 전송됨.
 > **이중 봇 문제**: PC 봇과 NAS 봇이 동시에 실행되면 Discord가 같은 슬래시 커맨드 인터랙션을 양쪽에 전달해 한쪽이 `10062 Unknown interaction` 오류로 실패함. NAS가 주봇 — PC Task Scheduler의 `StockResearch_DiscordBot`은 비활성화 상태 유지. `discord_bot.py`의 `_defer()` 헬퍼가 10062를 조용히 무시하도록 처리돼 있음.
 
-재등록 시: `scripts/setup_scheduler.ps1`을 관리자 PowerShell에서 실행.
+재등록 시: `scripts/setup_scheduler.ps1`을 관리자 PowerShell에서 실행 (`StockResearch_Newsletter_A/B` 등록, `StockResearch_DiscordBot`은 NAS 주봇 원칙으로 등록하지 않음).
 PC 봇 중지: `schtasks /End /TN "StockResearch_DiscordBot"`
 
 **NAS 컨테이너 경로**: `/volume1/docker/stock` (주의: `/volume1/docker/stock-bot`은 구버전 디렉토리)
@@ -76,11 +78,13 @@ PC 봇 중지: `schtasks /End /TN "StockResearch_DiscordBot"`
 **Docker (Discord 봇 컨테이너)**
 ```bash
 docker build -t stock-bot .  # 최초 또는 requirements.txt 변경 후 빌드
-docker-compose up -d         # 백그라운드로 봇 실행
+docker-compose up -d         # 백그라운드로 봇 실행 (로컬 PC용)
 docker-compose logs -f       # 실시간 로그 확인
 docker-compose down          # 봇 종료
 ```
 볼륨 마운트: `./data:/app/data`, `./scripts:/app/scripts`, `./research:/app/research`, `./logs:/app/logs`, `./.env:/app/.env:ro` — 컨테이너 재시작 없이 스크립트 수정 즉시 반영. 로그는 JSON 드라이버로 10MB × 3개 로테이션.
+
+`docker-compose.nas.yml` — NAS 전용 설정 (`docker-compose.yml`에서 볼륨 경로를 `/volume1/docker/stock/`으로 교체). NAS에서는 이 파일을 사용.
 
 > **NAS 최초 배포 시**: `logs/` 디렉토리가 없으면 컨테이너 시작 실패. `mkdir -p /volume1/docker/stock/logs` 먼저 실행할 것.
 
@@ -112,7 +116,7 @@ Full-stack TypeScript: React+Vite 프론트엔드, Express 백엔드, `data/` �
 
 **데이터 수집 흐름** (핵심 기능):
 1. 클라이언트가 `POST /api/collect` → SSE 연결 오픈
-2. `claude-sonnet-4-5` + `web_search_20250305` 도구로 최대 15턴 루프 (`server/index.ts:107` 하드코딩 — 에이전트 버전 4.6과 다름)
+2. `claude-sonnet-4-5` + `web_search_20250305` 도구로 최대 15턴 루프 (`server/index.ts` 약 107번 라인에 모델명 하드코딩 — 모델 업그레이드 시 이 라인 수정)
 3. 진행 이벤트: `searching` → `streaming` → `processing` → `done`
 4. 파싱된 JSON → `data/marketcap-YYYY-MM-DD.json`, `data/index.json` 업데이트
 
@@ -157,10 +161,14 @@ Full-stack TypeScript: React+Vite 프론트엔드, Express 백엔드, `data/` �
   technical_analyst.py      — RSI·MACD·이평선·52주 고저 (Yahoo Finance) → #종목-분석
   deep_analyst.py           — Claude API + web search 심층 분석 → #종목-분석
          ↑
-  discord_bot.py            — 슬래시 커맨드 수신 + 장중 3분 주기 실시간 급변 감지
+  discord_bot.py            — 슬래시 커맨드 수신 + 장중 3분 주기 실시간 급변 감지 (APScheduler 없음 — 07:00 스케줄은 NAS cron 전담)
   kr_stocks.py              — 한국 종목명 → 티커 변환 유틸 (24h 캐시)
   yahoo_finance.py          — Yahoo Finance 래퍼 (fast_info 우선, 5d 일별 폴백)
 ```
+
+> **중복 실행 주의**: `discord_bot.py`에 APScheduler로 07:00 일간 리포트를 등록하면 NAS cron과 이중 실행되어 Discord에 동일 메시지가 두 번 전송됨. 봇은 실시간 알림·슬래시 커맨드만 담당, 정기 리포트는 cron 전담으로 유지할 것.
+
+> **collect 실패 시 동작**: `run_daily.py`는 `collect_and_save()`가 None 반환(yfinance 수집 실패)하면 `market_watcher`·`sector_analyst` 실행을 건너뜀. 오래된 데이터로 잘못된 리포트가 발송되는 것을 방지. `market_indicators`는 시총 데이터와 무관하므로 항상 실행됨.
 
 **Discord 슬래시 커맨드**
 
@@ -219,9 +227,9 @@ Full-stack TypeScript: React+Vite 프론트엔드, Express 백엔드, `data/` �
 
 **stock-agent 출력물**:
 - 리서치 마크다운: `research/TICKER_YYYYMMDD.md` — `/stock-research-formatter`가 이 파일을 읽어 Excel 생성
-- JSON 임시파일: `output/_temp_TICKER.json` (완료 후 자동 삭제)
+- JSON 임시파일: `output/_temp_TICKER.json` (파이프라인 중간 결과물 — 자동 삭제되지 않음, 수동 정리 필요)
 - 개별 리포트: `output/TICKER_YYYYMMDD.xlsx`
-- 포트폴리오 마스터: `output/portfolio_master.xlsx`
+- 포트폴리오 마스터: `output/portfolio_master.xlsx` (실행마다 누적 업데이트)
 - Excel 생성 스크립트: `.claude/skills/stock-research-formatter/scripts/make_direct.py`
 
 **portfolio-analyzer 동작**:
@@ -255,3 +263,20 @@ Gmail SMTP 자동 발송: A는 05:59, B는 06:00에 `newsletter_send.py`가 자�
 - B: AI 트렌드 — 매일 05:00 자동 실행, 06:00 Gmail 자동 발송
 
 **설정 파일**: `data/newsletter_config_{A|B}.json` — 구독자 목록·RSS 소스·템플릿 등 뉴스레터별 설정.
+
+---
+
+## 데이터 파일 관리 (`data/`)
+
+| 유형 | 패턴 | 설명 |
+|------|------|------|
+| 영구 | `marketcap-YYYY-MM-DD.json` | 일별 시총 스냅샷 (누적) |
+| 영구 | `index.json` | 수집 날짜 목록 인덱스 |
+| 영구 | `watchlist.json` | 워치리스트 (`{ticker, name, added_at}[]`) |
+| 영구 | `target_portfolio.json` | 목표 포트폴리오 설정 |
+| 영구 | `newsletter_config_{A\|B}.json` | 뉴스레터 설정 |
+| 캐시 | `kr_stocks_cache.json` | 한국 종목 티커 캐시 (24h TTL) |
+| 임시 | `_temp_newsletter_{A\|B}.json` | 뉴스레터 수집 단계 결과물 |
+| 임시 | `_stibee_*.json` | Stibee API 응답 디버그용 (수동 정리) |
+
+`output/` 폴더의 `_temp_*.json`도 파이프라인 중간 결과물 — 자동 삭제되지 않음.

@@ -7,8 +7,6 @@ import subprocess
 from datetime import datetime, timezone, timedelta
 from dotenv import load_dotenv
 import pytz
-from apscheduler.schedulers.asyncio import AsyncIOScheduler
-from apscheduler.triggers.cron import CronTrigger
 
 KST = timezone(timedelta(hours=9))
 KST_TZ = pytz.timezone("Asia/Seoul")
@@ -177,17 +175,6 @@ async def before_realtime_alert():
     await bot.wait_until_ready()
 
 
-# ── 정기 스케줄 잡 ──────────────────────────────────────────
-async def scheduled_daily():
-    """매일 07:00 KST — 글로벌 지표 + 시장 요약 + 섹터 분석"""
-    print(f"[스케줄] 일간 리포트 시작: {datetime.now(KST)}")
-    try:
-        from run_daily import main as daily_main
-        await daily_main()
-    except Exception as e:
-        print(f"[스케줄] 일간 리포트 오류: {e}")
-
-
 # ── 봇 이벤트 ───────────────────────────────────────────────
 @bot.event
 async def on_ready():
@@ -200,11 +187,7 @@ async def on_ready():
         print(f"[슬래시 커맨드] 동기화 실패: {e}")
     realtime_watchlist_alert.start()
     print(f"[실시간알림] 장중 3분 주기 워치리스트 감시 시작 (±{ALERT_THRESHOLD_PCT}%)")
-
-    scheduler = AsyncIOScheduler(timezone=KST_TZ)
-    scheduler.add_job(scheduled_daily, CronTrigger(hour=7, minute=0, timezone=KST_TZ))
-    scheduler.start()
-    print("[스케줄] 07:00 일간 리포트 등록 완료 (KST) — 16:00 국장 리포트는 NAS cron 담당")
+    print("[스케줄] 07:00 일간 리포트는 NAS cron이 담당 (discord_bot 스케줄러 제거됨)")
 
 
 # ── 자연어 메시지 처리 ───────────────────────────────────────
