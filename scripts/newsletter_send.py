@@ -40,6 +40,8 @@ def get_subscribers(list_id: str) -> list[str]:
             headers={"AccessToken": STIBEE_API_KEY},
             timeout=15,
         )
+        if not resp.ok:
+            raise RuntimeError(f"Stibee API {resp.status_code}: {resp.text}")
         resp.raise_for_status()
         items = resp.json()
         if not items:

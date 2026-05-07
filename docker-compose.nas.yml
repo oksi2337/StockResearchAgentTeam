@@ -15,8 +15,3 @@ services:
       - ./research:/app/research
       - ./logs:/app/logs
       - ./.env:/app/.env:ro
-    logging:
-      driver: json-file
-      options:
-        max-size: "10m"
-        max-file: "3"

@@ -90,6 +90,10 @@ docker-compose down          # 봇 종료
 
 > **cron 동작 확인**: `python:3.12-slim` 이미지에는 `ps` 명령어가 없음. cron 실행 여부는 `docker exec stock-bot /usr/sbin/cron` 실행 시 `can't lock /var/run/crond.pid` 메시지로 확인 (이미 실행 중이라는 의미).
 
+> **Container Manager 로그탭이 비어있을 경우**: WinSCP로 `/volume1/docker/stock/logs/` 폴더를 직접 열어 `daily.log` / `newsletter_A.log` 등을 확인. `docker-compose.nas.yml`에서 `logging` 블록 제거로 해결 가능 (현재 제거됨).
+
+> **NAS scripts 동기화**: `scripts/` 파일은 볼륨 마운트로 즉시 반영되지만 NAS에 파일이 없으면 반영되지 않음. 새 스크립트 추가 후 WinSCP로 `/volume1/docker/stock/scripts/`에 업로드 필수. 누락 시 `ModuleNotFoundError` 발생. 특히 `collect_marketcap_live.py`가 없으면 07:00 일간 리포트 전체 실패.
+
 > **NAS 배포 기준**: `docker/entrypoint.sh`가 Dockerfile CMD로 연결돼 있어 컨테이너 시작 시 cron 데몬 + Discord 봇이 함께 실행됨. cron 스케줄 작업(04:50·05:00·05:59·06:00 뉴스레터, 07:00 일간 리포트, 16:00 국장 리포트)은 컨테이너 내부 cron이 담당. cron 스크립트는 `load_dotenv()`로 `/app/.env`를 읽으므로 반드시 `.env` 볼륨 마운트가 있어야 함. PC가 꺼져 있어도 NAS에서 모든 자동화가 실행되는 것이 목표. Windows Task Scheduler와 중복 등록 금지 — Discord 메시지 이중 발송 원인.
 
 ## Architecture
