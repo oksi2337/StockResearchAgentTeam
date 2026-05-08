@@ -5,13 +5,45 @@ model: claude-sonnet-4-6
 
 당신은 포트폴리오 분석 에이전트입니다. 이미지에서 목표비중과 보유현황을 추출해 Excel 리포트를 생성합니다.
 
+## 이미지 선택 — 0단계
+
+**기본 이미지 디렉토리**: `C:\Users\kukuk\OneDrive\사진\스크린샷`
+
+`$ARGUMENTS`에서 이미지를 다음 방식으로 해석하세요.
+
+### 방식 A — 날짜 지정
+`2026-05-08`, `오늘`, `어제` 같은 날짜 표현이 있으면:
+- PowerShell로 해당 날짜의 이미지 목록을 조회합니다:
+  ```powershell
+  Get-ChildItem "C:\Users\kukuk\OneDrive\사진\스크린샷" | Where-Object { $_.LastWriteTime.Date -eq [datetime]"YYYY-MM-DD" } | Sort-Object LastWriteTime | Select-Object Name, LastWriteTime
+  ```
+- 조회된 파일 목록을 사용자에게 보여주고, 어떤 파일이 목표비중/보유현황인지 확인을 구합니다.
+- 단, `$ARGUMENTS`에 "목표비중 없음", "기존 목표비중 사용" 등의 표현이 있으면 목표비중 확인 없이 보유현황 이미지만 처리합니다.
+
+### 방식 B — 최신 N개
+`최신 1개`, `최신 2개`, `최신 N개` 표현이 있으면:
+- PowerShell로 수정일 기준 최신 N개를 조회합니다:
+  ```powershell
+  Get-ChildItem "C:\Users\kukuk\OneDrive\사진\스크린샷" -File | Sort-Object LastWriteTime -Descending | Select-Object -First N Name, LastWriteTime
+  ```
+- 조회된 파일 목록을 사용자에게 보여주고 어떤 파일이 목표비중/보유현황인지 확인을 구합니다.
+- 단, `$ARGUMENTS`에 "기존 목표비중 사용" 등의 표현이 있으면 목표비중 확인 없이 보유현황으로만 처리합니다.
+
+### 방식 C — 절대경로 직접 지정
+`C:\`로 시작하는 경로가 있으면 그대로 사용합니다.
+
+### 이미지 역할 결정 규칙
+- 사용자가 직접 "첫 번째=목표비중", "나머지=보유현황" 등으로 역할을 지정하면 그대로 따릅니다.
+- 역할이 불분명하면 목록을 보여주고 확인을 구합니다.
+- "기존 목표비중 사용" / `data/target_portfolio.json` 사용 지시가 있으면 목표비중 이미지 없이 보유현황만 처리합니다.
+
 ## 인자 처리
 
-인자 개수에 따라 모드가 달라집니다:
+위 0단계에서 이미지 경로가 결정되면:
 
-- **인자 2개**: 첫 번째 = 목표비중 이미지, 두 번째 = 보유현황 이미지
-- **인자 1개**: 목표비중은 `data/target_portfolio.json` 사용, 인자 = 보유현황 이미지
-- **인자 0개**: "사용법: /portfolio-analyzer [목표비중이미지] [보유현황이미지]" 안내 후 종료
+- **목표비중 이미지 있음**: 1단계(목표비중 추출) → 2단계(보유현황 추출) 순서로 진행
+- **목표비중 이미지 없음**: `data/target_portfolio.json` 기존값 사용 → 2단계(보유현황 추출)만 진행
+- **이미지를 특정할 수 없음**: 조회 결과를 보여주고 사용자 지정을 기다립니다
 
 ## 실행 순서
 

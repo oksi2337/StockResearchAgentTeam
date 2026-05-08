@@ -53,6 +53,7 @@ python scripts/run_newsletter.py A    # 뉴스레터 A 파이프라인 (수집�
 python scripts/run_newsletter.py B    # 뉴스레터 B 파이프라인 (수집→AI→검수→Notion)
 python scripts/newsletter_send.py A   # Stibee 구독자 목록 조회 + Gmail SMTP 발송
 python scripts/newsletter_send.py B   # 뉴스레터 B 발송
+python scripts/newsletter_stibee.py A # Stibee 캠페인 생성 (발송은 Stibee 대시보드에서 수동)
 ```
 
 선택 환경변수 (`newsletter_send.py` 발송에 필요):
@@ -90,7 +91,15 @@ docker-compose down          # 봇 종료
 
 > **cron 동작 확인**: `python:3.12-slim` 이미지에는 `ps` 명령어가 없음. cron 실행 여부는 `docker exec stock-bot /usr/sbin/cron` 실행 시 `can't lock /var/run/crond.pid` 메시지로 확인 (이미 실행 중이라는 의미).
 
-> **Container Manager 로그탭이 비어있을 경우**: WinSCP로 `/volume1/docker/stock/logs/` 폴더를 직접 열어 `daily.log` / `newsletter_A.log` 등을 확인. `docker-compose.nas.yml`에서 `logging` 블록 제거로 해결 가능 (현재 제거됨).
+> **Container Manager 로그탭이 비어있을 경우**: WinSCP로 `/volume1/docker/stock/logs/` 폴더를 직접 열어 확인. `docker-compose.nas.yml`에서 `logging` 블록 제거로 해결 가능 (현재 제거됨).
+>
+> **NAS 로그 파일 목록** (`/volume1/docker/stock/logs/`):
+> - `daily.log` — 07:00 시총 수집 + 글로벌 지표 + 시장 요약
+> - `korean.log` — 16:00 국장 마감 리포트
+> - `newsletter_A.log` — 04:50 뉴스레터 A 파이프라인
+> - `newsletter_B.log` — 05:00 뉴스레터 B 파이프라인
+> - `newsletter_send_A.log` — 05:59 뉴스레터 A 발송
+> - `newsletter_send_B.log` — 06:00 뉴스레터 B 발송
 
 > **NAS scripts 동기화**: `scripts/` 파일은 볼륨 마운트로 즉시 반영되지만 NAS에 파일이 없으면 반영되지 않음. 새 스크립트 추가 후 WinSCP로 `/volume1/docker/stock/scripts/`에 업로드 필수. 누락 시 `ModuleNotFoundError` 발생. 특히 `collect_marketcap_live.py`가 없으면 07:00 일간 리포트 전체 실패.
 
@@ -120,7 +129,7 @@ Full-stack TypeScript: React+Vite 프론트엔드, Express 백엔드, `data/` �
 
 **데이터 수집 흐름** (핵심 기능):
 1. 클라이언트가 `POST /api/collect` → SSE 연결 오픈
-2. `claude-sonnet-4-5` + `web_search_20250305` 도구로 최대 15턴 루프 (`server/index.ts` 약 107번 라인에 모델명 하드코딩 — 모델 업그레이드 시 이 라인 수정)
+2. `claude-sonnet-4-5` + `web_search_20250305` 도구로 최대 15턴 루프 (`server/index.ts` 107번 라인에 모델명 하드코딩 — 모델 업그레이드 시 이 라인 수정)
 3. 진행 이벤트: `searching` → `streaming` → `processing` → `done`
 4. 파싱된 JSON → `data/marketcap-YYYY-MM-DD.json`, `data/index.json` 업데이트
 
@@ -234,9 +243,14 @@ Full-stack TypeScript: React+Vite 프론트엔드, Express 백엔드, `data/` �
 - JSON 임시파일: `output/_temp_TICKER.json` (파이프라인 중간 결과물 — 자동 삭제되지 않음, 수동 정리 필요)
 - 개별 리포트: `output/TICKER_YYYYMMDD.xlsx`
 - 포트폴리오 마스터: `output/portfolio_master.xlsx` (실행마다 누적 업데이트)
-- Excel 생성 스크립트: `.claude/skills/stock-research-formatter/scripts/make_direct.py`
+
+**stock-research-formatter 스크립트 구분** (`.claude/skills/stock-research-formatter/scripts/`):
+- `make_direct.py` — JSON `_temp_*.json` → 개별 Excel + 포트폴리오 마스터 동시 생성 (stock-agent 내부에서 호출)
+- `make_individual.py` — 마크다운 `research/*.md` → 개별 Excel 한 파일 생성 (`/stock-research-formatter` 스킬에서 호출)
+- `make_portfolio.py` — 마크다운 `research/*.md` → 누적 `portfolio_master.xlsx` 추가/갱신 (`--bulk` 플래그로 폴더 일괄 처리 가능)
 
 **portfolio-analyzer 동작**:
+- **이미지 기본 경로**: `C:\Users\kukuk\OneDrive\사진\스크린샷` — 날짜(`2026-05-08`, `오늘`) 또는 `최신 N개` 표현으로 이미지 선택. PowerShell로 디렉토리 조회 후 목록 확인 → 역할(목표비중/보유현황) 지정. 절대경로 직접 입력도 가능.
 - 인자 2개: 첫 번째=목표비중 이미지, 두 번째=보유현황 이미지 → `data/target_portfolio.json` 갱신 후 Excel
 - 인자 1개: `data/target_portfolio.json` 기존값 사용, 인자=보유현황 이미지 → Excel
 - **보유현황 이미지 여러 장**: 목표비중 1장 + 보유현황 N장 전달 가능. 여러 계좌(국내계좌1, 국내계좌2, 미국계좌 등) 스크린샷을 모두 전달하면 합산 처리. 동일 종목이 여러 계좌에 있으면 매입금액 합산.
