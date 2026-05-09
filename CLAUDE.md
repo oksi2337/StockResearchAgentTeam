@@ -34,6 +34,8 @@ npm run build           # 프론트엔드 타입체크(noEmit) + Vite 클라이�
 npm run preview         # 빌드 결과물 미리보기 (Vite preview)
 ```
 
+> **테스트·린터 없음**: 이 저장소에는 단위 테스트, 통합 테스트, ESLint 설정이 없음. 타입 검사만 `npm run build`(프론트엔드) 또는 `tsc -p tsconfig.json --noEmit`으로 가능.
+
 **Discord Agent Team (Python)**
 ```bash
 python scripts/discord_bot.py                      # Discord 봇 실행 (수동)
@@ -129,7 +131,7 @@ Full-stack TypeScript: React+Vite 프론트엔드, Express 백엔드, `data/` �
 
 **데이터 수집 흐름** (핵심 기능):
 1. 클라이언트가 `POST /api/collect` → SSE 연결 오픈
-2. `claude-sonnet-4-5` + `web_search_20250305` 도구로 최대 15턴 루프 (`server/index.ts` 107번 라인에 모델명 하드코딩 — 모델 업그레이드 시 이 라인 수정)
+2. `claude-sonnet-4-5` + `web_search_20250305` 도구로 최대 15턴 루프 (`server/index.ts`에서 `model:` 키워드로 검색해 모델명 수정 — 라인 번호는 코드 변경으로 이동할 수 있음)
 3. 진행 이벤트: `searching` → `streaming` → `processing` → `done`
 4. 파싱된 JSON → `data/marketcap-YYYY-MM-DD.json`, `data/index.json` 업데이트
 
@@ -216,14 +218,20 @@ Full-stack TypeScript: React+Vite 프론트엔드, Express 백엔드, `data/` �
 - 폴링 주기: **3분** (`@tasks.loop(minutes=3)`) — 장중에만 실행
 - 대상: 워치리스트 전체(한국+미국) + KOSPI 시총 상위 20 (한국장 시간에만 추가)
 - 기준: 전일 종가 대비 ±5% (`ALERT_THRESHOLD_PCT = 5.0`)
-- 중복 방지: `_alerted` dict로 당일 알림 완료 티커 추적, 자정 초기화
+- 중복 방지: `_alerted` dict로 당일 알림 완료 티커 추적, 자정 초기화 (`data/_alerted.json`에 영속화 — 봇 재시작 시 복원)
 - `yahoo_finance.get_intraday_change()` — `fast_info` 우선, 실패 시 5d 일별 데이터로 폴백
+- **미국장 시간**: 평일 KST 22:00~ 또는 토요일 KST 00:00~06:00 (금요일 미장이 KST 토요일 05:00까지 — 단순 `weekday<5` 체크 시 토요일 새벽 구간 누락됨)
+- **Discord 재연결 안전**: `on_ready()` 재호출 시 `is_running()` 체크로 중복 `start()` 방지
 
 **심층 분석 (`deep_analyst.py`)**: `stock-agent.md`와 동일한 7단계 리서치 방식을 Anthropic SDK로 구현. Claude Sonnet + `web_search_20250305` 도구로 주간 성과·주가 사유·경쟁력·밸류에이션·펀더멘털·전망·뉴스·증권사 의견 수집 후 Discord embed 3개(분석·증권사·뉴스)로 전송.
 
 ---
 
 ### 3. Claude Code 에이전트 슬래시 커맨드
+
+**구조 구분**:
+- `.claude/agents/` — AI 서브에이전트 정의 (markdown 프롬프트). Claude Code가 슬래시 커맨드로 로드해 별도 AI 컨텍스트로 실행.
+- `.claude/skills/` — Claude Code 스킬 (Python 스크립트 + 지시 파일). `scripts/` 하위에 실행 스크립트가 있음.
 
 `.claude/agents/` 폴더의 에이전트들은 Claude Code에서 슬래시 커맨드로 직접 실행합니다.
 
@@ -300,3 +308,5 @@ Gmail SMTP 자동 발송: A는 05:59, B는 06:00에 `newsletter_send.py`가 자�
 | 임시 | `_stibee_*.json` | Stibee API 응답 디버그용 (수동 정리) |
 
 `output/` 폴더의 `_temp_*.json`도 파이프라인 중간 결과물 — 자동 삭제되지 않음.
+
+`Public/` — 개인 참조 문서(북마크 HTML, notion 체크리스트 등). 코드와 무관, git untracked 상태 유지.

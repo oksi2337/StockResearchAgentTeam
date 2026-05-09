@@ -69,13 +69,17 @@ def _market_open_now() -> bool:
         kr_holidays = {}
 
     now = datetime.now(KST)
-    if now.weekday() >= 5:
-        return False
     t = now.hour * 60 + now.minute
+    weekday = now.weekday()  # 0=월 … 4=금, 5=토, 6=일
+
+    # 미국장: 평일 22:00~ 또는 토요일 00:00~06:00 (금요일 미장이 KST 토요일 새벽 05:00까지)
+    us_open = (weekday < 5 and t >= 22 * 60) or (weekday == 5 and t < 6 * 60)
+
+    # 한국장: 평일이고 한국 공휴일이 아닌 경우만
     is_kr_holiday = now.date() in kr_holidays
-    krx = (not is_kr_holiday) and (9 * 60 <= t <= 15 * 60 + 30)
-    us = t >= 22 * 60 or t < 6 * 60
-    return krx or us
+    krx = (weekday < 5) and (not is_kr_holiday) and (9 * 60 <= t <= 15 * 60 + 30)
+
+    return krx or us_open
 
 
 @tasks.loop(minutes=3)
@@ -185,8 +189,11 @@ async def on_ready():
         print(f"[슬래시 커맨드] {len(synced)}개 동기화 완료")
     except Exception as e:
         print(f"[슬래시 커맨드] 동기화 실패: {e}")
-    realtime_watchlist_alert.start()
-    print(f"[실시간알림] 장중 3분 주기 워치리스트 감시 시작 (±{ALERT_THRESHOLD_PCT}%)")
+    if not realtime_watchlist_alert.is_running():
+        realtime_watchlist_alert.start()
+        print(f"[실시간알림] 장중 3분 주기 워치리스트 감시 시작 (±{ALERT_THRESHOLD_PCT}%)")
+    else:
+        print("[실시간알림] 재연결 감지 — 루프 이미 실행 중, 재시작 생략")
     print("[스케줄] 07:00 일간 리포트는 NAS cron이 담당 (discord_bot 스케줄러 제거됨)")
 
 
