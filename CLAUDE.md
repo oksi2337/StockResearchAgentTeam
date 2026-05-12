@@ -46,7 +46,8 @@ python scripts/technical_analyst.py AAPL TSLA      # 특정 종목 기술적 분
 python scripts/deep_analyst.py "NVIDIA" NVDA       # 특정 종목 심층 분석
 python scripts/kr_stocks.py                        # 종목명 → 티커 변환 테스트
 python scripts/market_indicators.py               # 시장 지표 수집 테스트 (지표 커맨드용)
-python scripts/portfolio_excel.py output/_temp_portfolio.json  # 포트폴리오 Excel 생성
+python scripts/portfolio_excel.py <holdings_json_path>  # 포트폴리오 Excel 생성
+# holdings_json 형식: {"total_value": 137906438, "holdings": [{"name": "삼성전자", "value": 29350900}, ...]}
 ```
 
 **Newsletter (Python)**
@@ -138,7 +139,7 @@ Full-stack TypeScript: React+Vite 프론트엔드, Express 백엔드, `data/` �
 **데이터 스키마** (`src/types.ts`):
 - `StockEntry`: rank, name, ticker, exchange, country, sector, market_cap_usd, market_cap_krw, price_usd, change_1d_pct, collected_at
 - `DayData`: date, rate (KRW/USD), data[]
-- Sectors: Technology, Communication Services, Consumer, Finance, Conglomerate, Healthcare, Energy, Industrial, Materials, Utilities, Real Estate, Other
+- `Sector` (UI 필터 타입): `All | Technology | Finance | Healthcare | Energy | Consumer | Industrial | Other` — UI 드롭다운용 축약 목록. JSON 데이터의 sector 필드는 Claude 에이전트가 할당하는 더 넓은 값(Communication Services, Conglomerate, Materials 등)을 가질 수 있으며 "Other"로 합산됨.
 
 **UI 규칙**: `src/index.css` CSS 변수 다크 테마 — CSS 프레임워크 추가 금지. UI 텍스트는 한국어. 상승 `#3fb950`, 하락 `#f85149`. 개발 모드에서 `/api/*` 는 Vite가 `localhost:3001`로 프록시.
 
@@ -287,6 +288,8 @@ run_newsletter.py [A|B]
 ```
 Gmail SMTP 자동 발송: A는 05:59, B는 06:00에 `newsletter_send.py`가 자동 실행.
 
+> **주의**: `docker/crontab`의 "Resend 발송" 주석은 레거시 레이블로, 실제 구현은 Gmail SMTP (`GMAIL_USER` + `GMAIL_APP_PASSWORD` 환경변수)를 사용함.
+
 **뉴스레터 구분**
 - A: 글로벌 정치경제 — 매일 04:50 자동 실행, 05:59 Gmail 자동 발송
 - B: AI 트렌드 — 매일 05:00 자동 실행, 06:00 Gmail 자동 발송
@@ -307,7 +310,17 @@ Gmail SMTP 자동 발송: A는 05:59, B는 06:00에 `newsletter_send.py`가 자�
 | 캐시 | `kr_stocks_cache.json` | 한국 종목 티커 캐시 (24h TTL) |
 | 임시 | `_temp_newsletter_{A\|B}.json` | 뉴스레터 수집 단계 결과물 |
 | 임시 | `_stibee_*.json` | Stibee API 응답 디버그용 (수동 정리) |
+| 런타임 | `_alerted.json` | 실시간 급변 알림 완료 티커 (봇 재시작 시 복원용, 자정 초기화) |
 
-`output/` 폴더의 `_temp_*.json`도 파이프라인 중간 결과물 — 자동 삭제되지 않음.
+`output/` 폴더 — 자동 삭제되지 않음, 수동 정리 필요:
+- `_temp_TICKER.json` — stock-agent 파이프라인 중간 결과물
+- `TICKER_YYYYMMDD.xlsx` — 개별 종목 리서치 리포트
+- `portfolio_master.xlsx` — 누적 포트폴리오 마스터 (실행마다 갱신)
+- `portfolio_status_YYYYMMDD_HHmm.xlsx` — portfolio-analyzer 출력
+
+`research/` 폴더 — 마크다운 리서치 파일 (git tracked):
+- `TICKER_YYYYMMDD.md` — stock-agent 리서치 결과
+- `newsletter_{A|B}_{YYYYMMDD}.md` — 뉴스레터 AI 초안
+- `newsletter_{A|B}_{YYYYMMDD}_final.md` — 뉴스레터 최종본 (검수 완료)
 
 `Public/` — 개인 참조 문서(북마크 HTML, notion 체크리스트 등). 코드와 무관, git untracked 상태 유지.
