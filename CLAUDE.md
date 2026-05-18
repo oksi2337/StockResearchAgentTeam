@@ -2,9 +2,32 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-## 대화 언어
+## 언어 설정
 
-이 저장소에서 작업할 때는 **한국어**로 응답하세요.
+이 저장소의 모든 커뮤니케이션은 **한국어**를 기본으로 합니다.
+
+- **응답·설명**: 모든 사용자 응답, 진행 상황 업데이트, 요약은 한국어로 작성
+- **커밋 메시지**: 한국어로 작성 (예: `시총 수집 실패 시 알림 추가`). Co-Authored-By 트레일러 등 표준 영문 메타데이터는 그대로 유지
+- **PR 제목·본문**: 한국어로 작성
+- **계획·태스크 목록**: TaskCreate, ExitPlanMode 등에서 사용하는 작업 항목도 한국어
+- **코드 주석**: 새로 추가하는 주석은 한국어 (단, 기본 규칙에 따라 주석 자체를 최소화 — WHY가 비자명할 때만 작성)
+- **문서**: README, 기술 문서, CLAUDE.md 등 마크다운 문서는 한국어
+- **로그 메시지**: 사용자/운영자가 읽는 로그는 한국어 권장
+- **예외**: 변수명·함수명·파일명·식별자·라이브러리 API·에러 메시지 원문·외부 시스템 키워드는 영문 유지
+
+## 작업 방식
+
+이 저장소에서는 **확인 질문을 최소화하고 합리적 판단으로 즉시 작업**합니다.
+
+- **선택 질문(AskUserQuestion) 금지 (기본)**: 이미지 선택, 옵션 분기, 진행 여부 확인 등을 사용자에게 묻지 말고 합리적인 디폴트로 진행 후 결과를 보고. 예: portfolio-analyzer에 인자만 들어오면 그대로 실행, 캡처 자동 저장 같은 유틸리티는 바로 설정·실행
+- **합리적 디폴트 선택 기준**: ① 사용자가 직전에 언급한 의도, ② 폴더 컨벤션·기존 설정 파일, ③ 가장 최근 데이터 사용
+- **실행 후 보고**: 무엇을 가정하고 무엇을 실행했는지 결과와 함께 1~2줄로 명시. 가정이 틀렸으면 사용자가 되돌릴 수 있음
+- **여전히 확인이 필요한 작업** (CLAUDE.md 자율화 범위 밖):
+  - `git push`, `git push --force`, `git reset --hard` 등 원격/되돌릴 수 없는 git 작업
+  - 외부 시스템 발송: Discord 메시지, 뉴스레터 Stibee/Gmail 발송, Notion 업로드
+  - `output/`·`data/` 외부의 사용자 개인 파일 다량 삭제·이동
+  - 환경변수·API 키 노출 가능성이 있는 작업
+- **태스크 추적**: 다단계 작업은 묻지 말고 TaskCreate로 시작, 진행 상황을 사용자가 볼 수 있게 함
 
 ## Commands
 
@@ -12,8 +35,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ```bash
 npm install                          # Node.js 의존성 설치
 pip install -r requirements.txt      # Python 의존성 설치 (discord.py 2.4, anthropic 0.49, yfinance, pandas 2.2, finance-datareader 등)
+pip install openpyxl                 # Excel 생성용 (requirements.txt 미포함 — 누락 시 stock-agent/portfolio-analyzer 실패)
 cp .env.example .env                 # 환경변수 파일 생성 후 편집
 ```
+
+> PC 포맷 후 환경 복구 절차는 `README.md` 참조 (`.env`·`target_portfolio.json`·`watchlist.json` 백업 항목, Node/Python 설치 순서 포함).
 
 필수 환경변수 (미설정 시 봇 크래시):
 - `ANTHROPIC_API_KEY`, `DISCORD_BOT_TOKEN`, `DISCORD_GUILD_ID`

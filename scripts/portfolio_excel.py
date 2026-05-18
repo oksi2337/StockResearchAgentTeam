@@ -46,6 +46,30 @@ def _match_name(extracted: str, target: str) -> bool:
     return e == t or t in e or e in t
 
 
+def consolidate_samsung_preferred(holdings: list[dict]) -> list[dict]:
+    """삼성전자 + 삼성전자우 매입금액을 합산해 '삼성전자(우선주 포함)' 한 항목으로 통합.
+    CLAUDE.md 규칙: target_portfolio.json의 '삼성전자'에 매칭. 다른 종목 우선주는 별도 처리."""
+    samsung_total = 0.0
+    has_pref = False
+    others = []
+    for h in holdings:
+        name = h["name"]
+        value = h.get("value", 0)
+        if name == "삼성전자우":
+            samsung_total += value
+            has_pref = True
+        elif name in ("삼성전자", "삼성전자(우선주 포함)"):
+            samsung_total += value
+            if name == "삼성전자(우선주 포함)":
+                has_pref = True
+        else:
+            others.append(h)
+    if samsung_total > 0:
+        display = "삼성전자(우선주 포함)" if has_pref else "삼성전자"
+        others.append({"name": display, "value": samsung_total})
+    return others
+
+
 def load_target() -> dict:
     with open(TARGET_PATH, encoding="utf-8") as f:
         return json.load(f)
@@ -53,7 +77,12 @@ def load_target() -> dict:
 
 def build_rows(holdings: list[dict], total_value: float, target_data: dict) -> list[dict]:
     target_stocks = target_data["stocks"]
-    total_inv = target_data["total_investment"]
+    # CLAUDE.md 규칙: 총 투자금액은 매입금액 합계로 자동 계산 (이미지 표시값·옛 json 값 무시)
+    # 비중·금액 모두 매입금액 합계 기준으로 일관 계산되어 부호가 어긋나지 않음
+    total_inv = total_value
+
+    # CLAUDE.md 규칙: 삼성전자 + 삼성전자우 매입금액 합산 후 '삼성전자' target에 단일 매칭
+    holdings = consolidate_samsung_preferred(holdings)
 
     # holdings → name:value 맵
     held_map: dict[str, float] = {}
@@ -63,6 +92,9 @@ def build_rows(holdings: list[dict], total_value: float, target_data: dict) -> l
     rows = []
     for ts in target_stocks:
         tname = ts["name"]
+        # 삼성전자우 target은 본주에 합산되므로 별도 행 출력 안 함
+        if tname == "삼성전자우":
+            continue
         target_pct = ts["target_pct"]
         country = ts["country"]
 
@@ -122,9 +154,18 @@ def _cell_style(ws, row, col, value, *, bold=False, bg=None, fg=None,
     return c
 
 
+def save_target(target_data: dict) -> None:
+    with open(TARGET_PATH, "w", encoding="utf-8") as f:
+        json.dump(target_data, f, ensure_ascii=False, indent=2)
+
+
 def generate_excel(holdings: list[dict], total_value: float) -> Path:
     target_data = load_target()
     rows = build_rows(holdings, total_value, target_data)
+
+    # target_portfolio.json의 total_investment를 매입금액 합계로 자동 동기화
+    target_data["total_investment"] = round(total_value)
+    save_target(target_data)
 
     wb = Workbook()
     ws = wb.active
@@ -134,22 +175,21 @@ def generate_excel(holdings: list[dict], total_value: float) -> Path:
     ws.column_dimensions["I"].width = 16
     ws.column_dimensions["J"].width = 14
     ws.merge_cells("I1:J1")
-    ws.cell(row=1, column=9, value="투자금액 (기준)").font = Font(name="맑은 고딕", bold=True, size=10)
+    ws.cell(row=1, column=9, value="총 매입금액").font = Font(name="맑은 고딕", bold=True, size=10)
     ws.cell(row=1, column=9).alignment = Alignment(horizontal="center")
     ws.merge_cells("I2:J2")
-    c = ws.cell(row=1+1, column=9, value=target_data["total_investment"])
+    c = ws.cell(row=2, column=9, value=round(total_value))
     c.font = Font(name="맑은 고딕", bold=True, size=11, color="1F4E79")
     c.alignment = Alignment(horizontal="center")
     c.number_format = '#,##0"원"'
 
     ws.merge_cells("I3:J3")
-    ws.cell(row=3, column=9, value="현재 평가금액").font = Font(name="맑은 고딕", size=9, color="595959")
+    ws.cell(row=3, column=9, value="기준일").font = Font(name="맑은 고딕", size=9, color="595959")
     ws.cell(row=3, column=9).alignment = Alignment(horizontal="center")
     ws.merge_cells("I4:J4")
-    c = ws.cell(row=4, column=9, value=total_value)
+    c = ws.cell(row=4, column=9, value=datetime.now().strftime("%Y-%m-%d %H:%M"))
     c.font = Font(name="맑은 고딕", bold=True, size=11, color="1F4E79")
     c.alignment = Alignment(horizontal="center")
-    c.number_format = '#,##0"원"'
 
     # ── 컬럼 너비 ──────────────────────────────────────────
     widths = [6, 16, 14, 12, 9, 12, 14]
