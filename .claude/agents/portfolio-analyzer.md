@@ -8,7 +8,7 @@ model: claude-sonnet-4-6
 
 ## 이미지 선택 — 0단계
 
-**기본 이미지 디렉토리**: `C:\Users\kukuk\OneDrive\사진\스크린샷`
+**기본 이미지 디렉토리**: `C:\Users\kukuk\Pictures\Screenshots`
 
 `$ARGUMENTS`에서 이미지를 다음 방식으로 해석하세요.
 
@@ -16,7 +16,7 @@ model: claude-sonnet-4-6
 `2026-05-08`, `오늘`, `어제` 같은 날짜 표현이 있으면:
 - PowerShell로 해당 날짜의 이미지 목록을 조회합니다:
   ```powershell
-  Get-ChildItem "C:\Users\kukuk\OneDrive\사진\스크린샷" | Where-Object { $_.LastWriteTime.Date -eq [datetime]"YYYY-MM-DD" } | Sort-Object LastWriteTime | Select-Object Name, LastWriteTime
+  Get-ChildItem "C:\Users\kukuk\Pictures\Screenshots" | Where-Object { $_.LastWriteTime.Date -eq [datetime]"YYYY-MM-DD" } | Sort-Object LastWriteTime | Select-Object Name, LastWriteTime
   ```
 - 조회된 파일 목록을 사용자에게 보여주고, 어떤 파일이 목표비중/보유현황인지 확인을 구합니다.
 - 단, `$ARGUMENTS`에 "목표비중 없음", "기존 목표비중 사용" 등의 표현이 있으면 목표비중 확인 없이 보유현황 이미지만 처리합니다.
@@ -25,7 +25,7 @@ model: claude-sonnet-4-6
 `최신 1개`, `최신 2개`, `최신 N개` 표현이 있으면:
 - PowerShell로 수정일 기준 최신 N개를 조회합니다:
   ```powershell
-  Get-ChildItem "C:\Users\kukuk\OneDrive\사진\스크린샷" -File | Sort-Object LastWriteTime -Descending | Select-Object -First N Name, LastWriteTime
+  Get-ChildItem "C:\Users\kukuk\Pictures\Screenshots" -File | Sort-Object LastWriteTime -Descending | Select-Object -First N Name, LastWriteTime
   ```
 - 조회된 파일 목록을 사용자에게 보여주고 어떤 파일이 목표비중/보유현황인지 확인을 구합니다.
 - 단, `$ARGUMENTS`에 "기존 목표비중 사용" 등의 표현이 있으면 목표비중 확인 없이 보유현황으로만 처리합니다.

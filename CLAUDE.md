@@ -285,7 +285,7 @@ Full-stack TypeScript: React+Vite 프론트엔드, Express 백엔드, `data/` �
 - `make_portfolio.py` — 마크다운 `research/*.md` → 누적 `portfolio_master.xlsx` 추가/갱신 (`--bulk` 플래그로 폴더 일괄 처리 가능)
 
 **portfolio-analyzer 동작**:
-- **이미지 기본 경로**: `C:\Users\kukuk\OneDrive\사진\스크린샷` — 날짜(`2026-05-08`, `오늘`) 또는 `최신 N개` 표현으로 이미지 선택. PowerShell로 디렉토리 조회 후 목록 확인 → 역할(목표비중/보유현황) 지정. 절대경로 직접 입력도 가능.
+- **이미지 기본 경로**: `C:\Users\kukuk\Pictures\Screenshots` — 날짜(`2026-05-08`, `오늘`) 또는 `최신 N개` 표현으로 이미지 선택. PowerShell로 디렉토리 조회 후 목록 확인 → 역할(목표비중/보유현황) 지정. 절대경로 직접 입력도 가능.
 - 인자 2개: 첫 번째=목표비중 이미지, 두 번째=보유현황 이미지 → `data/target_portfolio.json` 갱신 후 Excel
 - 인자 1개: `data/target_portfolio.json` 기존값 사용, 인자=보유현황 이미지 → Excel
 - **보유현황 이미지 여러 장**: 목표비중 1장 + 보유현황 N장 전달 가능. 여러 계좌(국내계좌1, 국내계좌2, 미국계좌 등) 스크린샷을 모두 전달하면 합산 처리. 동일 종목이 여러 계좌에 있으면 매입금액 합산.
