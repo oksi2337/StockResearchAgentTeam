@@ -1,75 +1,10 @@
 {
-  "total_investment": 142567597,
+  "total_investment": 143226344,
   "stocks": [
     {
-      "name": "삼성생명",
-      "country": "한국",
-      "target_pct": 4.5
-    },
-    {
-      "name": "SK텔레콤",
-      "country": "한국",
-      "target_pct": 6.0
-    },
-    {
-      "name": "삼양식품",
-      "country": "한국",
-      "target_pct": 2.0
-    },
-    {
-      "name": "한화에어로스페이스",
-      "country": "한국",
-      "target_pct": 3.0
-    },
-    {
-      "name": "LIG넥스원",
-      "country": "한국",
-      "target_pct": 3.0
-    },
-    {
-      "name": "현대차",
-      "country": "한국",
-      "target_pct": 4.0
-    },
-    {
-      "name": "현대모비스",
-      "country": "한국",
-      "target_pct": 6.0
-    },
-    {
-      "name": "SK하이닉스",
-      "country": "한국",
-      "target_pct": 12.5
-    },
-    {
-      "name": "삼성전기",
-      "country": "한국",
-      "target_pct": 3.0
-    },
-    {
-      "name": "삼성전자",
-      "country": "한국",
-      "target_pct": 20.5
-    },
-    {
-      "name": "두산우",
-      "country": "한국",
-      "target_pct": 0.0
-    },
-    {
-      "name": "아이에스동서",
-      "country": "한국",
-      "target_pct": 0.0
-    },
-    {
-      "name": "키움증권",
-      "country": "한국",
-      "target_pct": 0.0
-    },
-    {
-      "name": "대한조선",
-      "country": "한국",
-      "target_pct": 0.0
+      "name": "현금",
+      "country": "공통",
+      "target_pct": 2.5
     },
     {
       "name": "마이크로소프트",
@@ -94,7 +29,7 @@
     {
       "name": "알파벳",
       "country": "미국",
-      "target_pct": 8.0
+      "target_pct": 6.0
     },
     {
       "name": "TSMC",
@@ -104,7 +39,7 @@
     {
       "name": "엔비디아",
       "country": "미국",
-      "target_pct": 8.5
+      "target_pct": 9.0
     },
     {
       "name": "브로드컴",
@@ -119,7 +54,7 @@
     {
       "name": "마벨테크놀로지",
       "country": "미국",
-      "target_pct": 3.5
+      "target_pct": 5.0
     },
     {
       "name": "애플",
@@ -129,22 +64,17 @@
     {
       "name": "Centrus 에너지",
       "country": "미국",
-      "target_pct": 0.5
-    },
-    {
-      "name": "에머슨일렉트릭",
-      "country": "미국",
       "target_pct": 0.0
     },
     {
       "name": "EATON CORP",
       "country": "미국",
-      "target_pct": 0.5
+      "target_pct": 0.0
     },
     {
       "name": "GE버노바",
       "country": "미국",
-      "target_pct": 0.5
+      "target_pct": 0.0
     },
     {
       "name": "테슬라",
@@ -152,24 +82,59 @@
       "target_pct": 0.0
     },
     {
-      "name": "노스롭그루만",
-      "country": "미국",
-      "target_pct": 0.0
+      "name": "삼성생명",
+      "country": "한국",
+      "target_pct": 4.5
     },
     {
-      "name": "헌팅턴잉걸스인더스트리",
-      "country": "미국",
-      "target_pct": 0.0
+      "name": "SK텔레콤",
+      "country": "한국",
+      "target_pct": 6.0
     },
     {
-      "name": "옵티머스리",
-      "country": "미국",
-      "target_pct": 0.0
+      "name": "삼양식품",
+      "country": "한국",
+      "target_pct": 1.5
     },
     {
-      "name": "현금",
-      "country": "-",
-      "target_pct": 0.0
+      "name": "한화에어로스페이스",
+      "country": "한국",
+      "target_pct": 2.0
+    },
+    {
+      "name": "LIG디펜스앤에어로스페이스",
+      "country": "한국",
+      "target_pct": 2.5
+    },
+    {
+      "name": "현대차",
+      "country": "한국",
+      "target_pct": 4.0
+    },
+    {
+      "name": "현대모비스",
+      "country": "한국",
+      "target_pct": 6.0
+    },
+    {
+      "name": "SK하이닉스",
+      "country": "한국",
+      "target_pct": 12.5
+    },
+    {
+      "name": "삼성증권(new)",
+      "country": "한국",
+      "target_pct": 1.0
+    },
+    {
+      "name": "삼성전기",
+      "country": "한국",
+      "target_pct": 3.0
+    },
+    {
+      "name": "삼성전자",
+      "country": "한국",
+      "target_pct": 20.5
     }
   ]
 }
