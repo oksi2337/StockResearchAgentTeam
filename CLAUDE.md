@@ -293,7 +293,7 @@ Full-stack TypeScript: React+Vite 프론트엔드, Express 백엔드, `data/` �
 - **미국 주식 환율**: 매 실행 시 WebSearch로 현재 USD/KRW 환율 검색 후 적용. 검색 실패 시에만 1,400원 가정.
 - **총 투자금액**: 전체 보유 종목 매입금액 합산으로 자동 계산 (이미지 표시값 무시).
 - 보유수량·평가금액·매입가 등 계산에 필요한 정보가 모두 없는 종목은 분석 제외 후 사용자에게 안내.
-- `data/target_portfolio.json` — 목표 포트폴리오 설정 (`total_investment`, `stocks[]` 배열). 종목명 매칭은 부분 일치 허용. 브로커 화면 약칭(예: `LIG디펜스앤에어` → `LIG넥스원`)은 수동 매핑 후 명시.
+- `data/target_portfolio.json` — 목표 포트폴리오 설정 (`total_investment`, `stocks[]` 배열). 종목명 매칭은 부분 일치 허용. 브로커 화면 별칭 → 정식명 자동 매핑: `scripts/portfolio_excel.py`의 `STOCK_NAME_MAPPING` 딕셔너리에 정의 (예: `LIG디펜스앤에어로` → `LIG넥스원`). 새로운 매핑이 필요하면 해당 딕셔너리에 추가.
 - **삼성전자 + 삼성전자우 합산**: 보유현황에 두 종목이 모두 있으면 매입금액을 합산해 `삼성전자(우선주 포함)`으로 단일 표시. target_portfolio.json의 `삼성전자` 항목에 매칭해 비중 비교.
 - 출력: `output/portfolio_status_YYYYMMDD_HHmm.xlsx`
 

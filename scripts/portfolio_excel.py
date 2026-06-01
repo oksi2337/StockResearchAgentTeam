@@ -25,6 +25,11 @@ BASE_DIR = Path(__file__).parent.parent
 TARGET_PATH = BASE_DIR / "data" / "target_portfolio.json"
 OUTPUT_DIR = BASE_DIR / "output"
 
+# ── 종목명 정규화 매핑 (브로커 화면 별칭 → 정식명) ──────────────────
+STOCK_NAME_MAPPING = {
+    "LIG디펜스앤에어로": "LIG넥스원",
+}
+
 # ── 색상 상수 ──────────────────────────────────────────────
 C_HEADER_BG  = "4472C4"   # 헤더 배경 (파란색)
 C_HEADER_FG  = "FFFFFF"   # 헤더 글자 (흰색)
@@ -37,6 +42,11 @@ C_CASH_BG    = "E2EFDA"   # 현금 배경
 
 THIN = Side(style="thin", color="BFBFBF")
 BORDER = Border(left=THIN, right=THIN, top=THIN, bottom=THIN)
+
+
+def normalize_stock_name(name: str) -> str:
+    """브로커 화면 별칭을 정식명으로 정규화"""
+    return STOCK_NAME_MAPPING.get(name, name)
 
 
 def _match_name(extracted: str, target: str) -> bool:
@@ -80,6 +90,10 @@ def build_rows(holdings: list[dict], total_value: float, target_data: dict) -> l
     # CLAUDE.md 규칙: 총 투자금액은 매입금액 합계로 자동 계산 (이미지 표시값·옛 json 값 무시)
     # 비중·금액 모두 매입금액 합계 기준으로 일관 계산되어 부호가 어긋나지 않음
     total_inv = total_value
+
+    # 종목명 정규화 (브로커 화면 별칭 → 정식명)
+    for h in holdings:
+        h["name"] = normalize_stock_name(h["name"])
 
     # CLAUDE.md 규칙: 삼성전자 + 삼성전자우 매입금액 합산 후 '삼성전자' target에 단일 매칭
     holdings = consolidate_samsung_preferred(holdings)
