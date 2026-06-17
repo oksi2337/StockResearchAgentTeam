@@ -295,7 +295,7 @@ Full-stack TypeScript: React+Vite 프론트엔드, Express 백엔드, `data/` �
 - 보유수량·평가금액·매입가 등 계산에 필요한 정보가 모두 없는 종목은 분석 제외 후 사용자에게 안내.
 - `data/target_portfolio.json` — 목표 포트폴리오 설정 (`total_investment`, `stocks[]` 배열). 종목명 매칭은 부분 일치 허용. 브로커 화면 별칭 → 정식명 자동 매핑: `scripts/portfolio_excel.py`의 `STOCK_NAME_MAPPING` 딕셔너리에 정의 (예: `LIG디펜스앤에어로` / `LIG넥스원` / `LIG D&A` → `LIG디펜스앤에어로스페이스`). 새로운 매핑이 필요하면 해당 딕셔너리에 추가.
 - **삼성전자 + 삼성전자우 합산**: 보유현황에 두 종목이 모두 있으면 매입금액을 합산해 `삼성전자(우선주 포함)`으로 단일 표시. target_portfolio.json의 `삼성전자` 항목에 매칭해 비중 비교.
-- 출력: `output/portfolio_status_YYYYMMDD_HHmm.xlsx`
+- 출력: `Portfolio/portfolio_status_YYYYMMDD_HHmm.xlsx`
 
 ---
 
@@ -342,7 +342,9 @@ Gmail SMTP 자동 발송: A는 05:59, B는 06:00에 `newsletter_send.py`가 자�
 - `_temp_TICKER.json` — stock-agent 파이프라인 중간 결과물
 - `TICKER_YYYYMMDD.xlsx` — 개별 종목 리서치 리포트
 - `portfolio_master.xlsx` — 누적 포트폴리오 마스터 (실행마다 갱신)
-- `portfolio_status_YYYYMMDD_HHmm.xlsx` — portfolio-analyzer 출력
+
+`Portfolio/` 폴더 — portfolio-analyzer 결과물:
+- `portfolio_status_YYYYMMDD_HHmm.xlsx` — portfolio-analyzer 분석 결과 (목표비중 vs 보유현황 비교)
 
 `research/` 폴더 — 마크다운 리서치 파일 (git tracked):
 - `TICKER_YYYYMMDD.md` — stock-agent 리서치 결과
