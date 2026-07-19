@@ -11,6 +11,7 @@ from pathlib import Path
 
 # 표에서 추출할 항목명 (md에 나오는 정확한 라벨)
 TABLE_FIELDS = [
+    "기업 개요",
     "주간 성과",
     "주간 주가 변동 주된 사유",
     "주가의 위치 (단기)",

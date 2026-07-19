@@ -38,6 +38,7 @@ SUMMARY_COLUMNS = [
     ("티커", 10),
     ("기업명", 16),
     ("작성일", 12),
+    ("기업 개요", 40),
     ("주간 성과", 12),
     ("주간 변동 사유", 28),
     ("단기 위치", 18),
@@ -63,6 +64,7 @@ RATINGS_COLUMNS = [
 ]
 
 FIELD_MAP = {
+    "기업 개요": "기업 개요",
     "주간 성과": "주간 성과",
     "주간 변동 사유": "주간 주가 변동 주된 사유",
     "단기 위치": "주가의 위치 (단기)",
@@ -154,6 +156,7 @@ def _summary_row(parsed: dict) -> list:
         parsed["ticker"],
         parsed["company"],
         parsed["date"],
+        _strip_md(f.get(FIELD_MAP["기업 개요"], "")),
         _strip_md(f.get(FIELD_MAP["주간 성과"], "")),
         _strip_md(f.get(FIELD_MAP["주간 변동 사유"], "")),
         _strip_md(f.get(FIELD_MAP["단기 위치"], "")),
@@ -236,13 +239,13 @@ def _write_summary_row(ws, row_idx: int, row_data: list):
     for col_idx, value in enumerate(row_data, start=1):
         c = ws.cell(row=row_idx, column=col_idx, value=value if value != "" else None)
 
-        if col_idx == 4 and isinstance(value, str) and value:
+        if col_idx == 5 and isinstance(value, str) and value:
             c.font = Font(name=FONT_NAME, size=10, bold=True, color=_detect_perf_color(value))
         else:
             c.font = body_font
 
         c.alignment = Alignment(
-            horizontal="center" if col_idx in (1, 2, 3, 4, 12) else "left",
+            horizontal="center" if col_idx in (1, 2, 3, 5, 13) else "left",
             vertical="center",
             wrap_text=True,
         )
