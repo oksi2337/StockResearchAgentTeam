@@ -3,20 +3,20 @@ SHELL=/bin/bash
 # TZ=Asia/Seoul 은 docker-compose에서 컨테이너 전체에 적용됨
 # 따라서 아래 시각은 KST 기준
 
-# 07:00 KST — 시총 수집(yfinance) + 글로벌 지표 + 시장 요약 + 섹터 분석
-0 7 * * * /usr/local/bin/python /app/scripts/run_daily.py >> /app/logs/daily.log 2>&1
+# 06:00 KST — 시총 수집(yfinance) + 글로벌 지표 + 시장 요약 + 섹터 분석
+0 6 * * * /usr/local/bin/python /app/scripts/run_daily.py >> /app/logs/daily.log 2>&1
 
 # 16:00 KST — 국장 마감 리포트 + 한국 시장 지표
 0 16 * * * /usr/local/bin/python /app/scripts/korean_market_report.py >> /app/logs/korean.log 2>&1
 
-# 04:50 KST 매일 — 뉴스레터 A (글로벌 정치·경제)
-50 4 * * * cd /app && /usr/local/bin/python scripts/run_newsletter.py A >> /app/logs/newsletter_A.log 2>&1
+# [중단됨] 04:50 KST 매일 — 뉴스레터 A (글로벌 정치·경제)
+# 50 4 * * * cd /app && /usr/local/bin/python scripts/run_newsletter.py A >> /app/logs/newsletter_A.log 2>&1
 
-# 05:00 KST 매일 — 뉴스레터 B (AI 트렌드)
-0 5 * * * cd /app && /usr/local/bin/python scripts/run_newsletter.py B >> /app/logs/newsletter_B.log 2>&1
+# [중단됨] 05:00 KST 매일 — 뉴스레터 B (AI 트렌드)
+# 0 5 * * * cd /app && /usr/local/bin/python scripts/run_newsletter.py B >> /app/logs/newsletter_B.log 2>&1
 
-# 05:59 KST 매일 — 뉴스레터 A Resend 발송
-59 5 * * * cd /app && /usr/local/bin/python scripts/newsletter_send.py A >> /app/logs/newsletter_send_A.log 2>&1
+# [중단됨] 05:59 KST 매일 — 뉴스레터 A Discord 발송
+# 59 5 * * * cd /app && /usr/local/bin/python scripts/newsletter_send.py A >> /app/logs/newsletter_send_A.log 2>&1
 
-# 06:00 KST 매일 — 뉴스레터 B Resend 발송
-0 6 * * * cd /app && /usr/local/bin/python scripts/newsletter_send.py B >> /app/logs/newsletter_send_B.log 2>&1
+# [중단됨] 06:00 KST 매일 — 뉴스레터 B Discord 발송
+# 0 6 * * * cd /app && /usr/local/bin/python scripts/newsletter_send.py B >> /app/logs/newsletter_send_B.log 2>&1

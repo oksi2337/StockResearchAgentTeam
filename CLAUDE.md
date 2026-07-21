@@ -90,12 +90,12 @@ python scripts/newsletter_stibee.py A # Stibee 캠페인 생성 (발송은 Stibe
 
 **Windows Task Scheduler (자동 실행)**
 - `StockResearch_DiscordBot` — ~~로그인 시 봇 자동 시작~~ **비활성화됨** (NAS를 주봇으로 사용, 이중 실행 시 10062 오류)
-- `StockResearch_DailyReport` — ~~07:00 일간 리포트~~ **비활성화됨** (NAS Docker cron이 담당. 활성화 시 NAS와 중복 전송 발생. `StartWhenAvailable=true`라 PC 켜지는 순간 즉시 실행되므로 반드시 비활성화)
+- `StockResearch_DailyReport` — ~~06:00 일간 리포트~~ **비활성화됨** (NAS Docker cron이 담당. 활성화 시 NAS와 중복 전송 발생. `StartWhenAvailable=true`라 PC 켜지는 순간 즉시 실행되므로 반드시 비활성화)
 - `StockResearch_KoreanMarket` — ~~16:00 국장 마감 리포트~~ **비활성화됨** (NAS Docker cron이 담당. 동일 이유)
 - `StockResearch_Newsletter_A` — 매일 04:50 뉴스레터 A 파이프라인 (NAS로 이전 권장)
 - `StockResearch_Newsletter_B` — 매일 05:00 뉴스레터 B 파이프라인 (NAS로 이전 권장)
 
-> **주의**: 07:00 일간 리포트와 16:00 국장 리포트는 NAS Docker cron이 담당. Windows Task Scheduler와 중복 등록 시 Discord 메시지가 두 번 전송됨.
+> **주의**: 06:00 일간 리포트와 16:00 국장 리포트는 NAS Docker cron이 담당. Windows Task Scheduler와 중복 등록 시 Discord 메시지가 두 번 전송됨.
 > **이중 봇 문제**: PC 봇과 NAS 봇이 동시에 실행되면 Discord가 같은 슬래시 커맨드 인터랙션을 양쪽에 전달해 한쪽이 `10062 Unknown interaction` 오류로 실패함. NAS가 주봇 — PC Task Scheduler의 `StockResearch_DiscordBot`은 비활성화 상태 유지. `discord_bot.py`의 `_defer()` 헬퍼가 10062를 조용히 무시하도록 처리돼 있음.
 
 재등록 시: `scripts/setup_scheduler.ps1`을 관리자 PowerShell에서 실행 (`StockResearch_Newsletter_A/B` 등록, `StockResearch_DiscordBot`은 NAS 주봇 원칙으로 등록하지 않음).
@@ -123,16 +123,16 @@ docker-compose down          # 봇 종료
 > **Container Manager 로그탭이 비어있을 경우**: WinSCP로 `/volume1/docker/stock/logs/` 폴더를 직접 열어 확인. `docker-compose.nas.yml`에서 `logging` 블록 제거로 해결 가능 (현재 제거됨).
 >
 > **NAS 로그 파일 목록** (`/volume1/docker/stock/logs/`):
-> - `daily.log` — 07:00 시총 수집 + 글로벌 지표 + 시장 요약
+> - `daily.log` — 06:00 시총 수집 + 글로벌 지표 + 시장 요약
 > - `korean.log` — 16:00 국장 마감 리포트
 > - `newsletter_A.log` — 04:50 뉴스레터 A 파이프라인
 > - `newsletter_B.log` — 05:00 뉴스레터 B 파이프라인
 > - `newsletter_send_A.log` — 05:59 뉴스레터 A 발송
 > - `newsletter_send_B.log` — 06:00 뉴스레터 B 발송
 
-> **NAS scripts 동기화**: `scripts/` 파일은 볼륨 마운트로 즉시 반영되지만 NAS에 파일이 없으면 반영되지 않음. 새 스크립트 추가 후 WinSCP로 `/volume1/docker/stock/scripts/`에 업로드 필수. 누락 시 `ModuleNotFoundError` 발생. 특히 `collect_marketcap_live.py`가 없으면 07:00 일간 리포트 전체 실패.
+> **NAS scripts 동기화**: `scripts/` 파일은 볼륨 마운트로 즉시 반영되지만 NAS에 파일이 없으면 반영되지 않음. 새 스크립트 추가 후 WinSCP로 `/volume1/docker/stock/scripts/`에 업로드 필수. 누락 시 `ModuleNotFoundError` 발생. 특히 `collect_marketcap_live.py`가 없으면 06:00 일간 리포트 전체 실패.
 
-> **NAS 배포 기준**: `docker/entrypoint.sh`가 Dockerfile CMD로 연결돼 있어 컨테이너 시작 시 cron 데몬 + Discord 봇이 함께 실행됨. cron 스케줄 작업(04:50·05:00·05:59·06:00 뉴스레터, 07:00 일간 리포트, 16:00 국장 리포트)은 컨테이너 내부 cron이 담당. cron 스크립트는 `load_dotenv()`로 `/app/.env`를 읽으므로 반드시 `.env` 볼륨 마운트가 있어야 함. PC가 꺼져 있어도 NAS에서 모든 자동화가 실행되는 것이 목표. Windows Task Scheduler와 중복 등록 금지 — Discord 메시지 이중 발송 원인.
+> **NAS 배포 기준**: `docker/entrypoint.sh`가 Dockerfile CMD로 연결돼 있어 컨테이너 시작 시 cron 데몬 + Discord 봇이 함께 실행됨. cron 스케줄 작업(04:50·05:00·05:59·06:00 뉴스레터, 06:00 일간 리포트, 16:00 국장 리포트)은 컨테이너 내부 cron이 담당. cron 스크립트는 `load_dotenv()`로 `/app/.env`를 읽으므로 반드시 `.env` 볼륨 마운트가 있어야 함. PC가 꺼져 있어도 NAS에서 모든 자동화가 실행되는 것이 목표. Windows Task Scheduler와 중복 등록 금지 — Discord 메시지 이중 발송 원인.
 
 ## Architecture
 
@@ -183,10 +183,10 @@ Full-stack TypeScript: React+Vite 프론트엔드, Express 백엔드, `data/` �
 
 | 시각 | 실행 주체 | 내용 | 채널 |
 |------|-----------|------|------|
-| 07:00 | NAS Docker cron → `run_daily.py` | 시총 수집(yfinance) + 글로벌 지수·변동성 + 금리·통화·원자재 | #일간-요약 |
-| 07:00 | NAS Docker cron → `run_daily.py` | 시총 Top 20 일간 요약 | #일간-요약 |
-| 07:00 | NAS Docker cron → `run_daily.py` | Top 10 순위변동 감지 (변동 시만) | #일간-요약 |
-| 07:00 | NAS Docker cron → `run_daily.py` | 섹터별 자금흐름 | #섹터-동향 |
+| 06:00 | NAS Docker cron → `run_daily.py` | 시총 수집(yfinance) + 글로벌 지수·변동성 + 금리·통화·원자재 | #일간-요약 |
+| 06:00 | NAS Docker cron → `run_daily.py` | 시총 Top 20 일간 요약 | #일간-요약 |
+| 06:00 | NAS Docker cron → `run_daily.py` | Top 10 순위변동 감지 (변동 시만) | #일간-요약 |
+| 06:00 | NAS Docker cron → `run_daily.py` | 섹터별 자금흐름 | #섹터-동향 |
 | 장중 3분 주기 | Discord 봇 내부 | 워치리스트 전체 + KOSPI 상위 20 급변 ±5% (평일, 한국장 09:00~15:30 / 미국장 22:00~06:00) | #시장-알림 |
 | 16:00 | NAS Docker cron → `korean_market_report.py` | 국장 마감 리포트 (KOSPI 상위 20 + 워치리스트 한국 종목) + 한국 시장 지표 | #일간-요약 |
 
@@ -203,12 +203,12 @@ Full-stack TypeScript: React+Vite 프론트엔드, Express 백엔드, `data/` �
   technical_analyst.py      — RSI·MACD·이평선·52주 고저 (Yahoo Finance) → #종목-분석
   deep_analyst.py           — Claude API + web search 심층 분석 → #종목-분석
          ↑
-  discord_bot.py            — 슬래시 커맨드 수신 + 장중 3분 주기 실시간 급변 감지 (APScheduler 없음 — 07:00 스케줄은 NAS cron 전담)
+  discord_bot.py            — 슬래시 커맨드 수신 + 장중 3분 주기 실시간 급변 감지 (APScheduler 없음 — 06:00 스케줄은 NAS cron 전담)
   kr_stocks.py              — 한국 종목명 → 티커 변환 유틸 (24h 캐시)
   yahoo_finance.py          — Yahoo Finance 래퍼 (fast_info 우선, 5d 일별 폴백)
 ```
 
-> **중복 실행 주의**: `discord_bot.py`에 APScheduler로 07:00 일간 리포트를 등록하면 NAS cron과 이중 실행되어 Discord에 동일 메시지가 두 번 전송됨. 봇은 실시간 알림·슬래시 커맨드만 담당, 정기 리포트는 cron 전담으로 유지할 것.
+> **중복 실행 주의**: `discord_bot.py`에 APScheduler로 06:00 일간 리포트를 등록하면 NAS cron과 이중 실행되어 Discord에 동일 메시지가 두 번 전송됨. 봇은 실시간 알림·슬래시 커맨드만 담당, 정기 리포트는 cron 전담으로 유지할 것.
 
 > **collect 실패 시 동작**: `run_daily.py`는 `collect_and_save()`가 None 반환(yfinance 수집 실패)하면 `market_watcher`·`sector_analyst` 실행을 건너뜀. 오래된 데이터로 잘못된 리포트가 발송되는 것을 방지. `market_indicators`는 시총 데이터와 무관하므로 항상 실행됨.
 
