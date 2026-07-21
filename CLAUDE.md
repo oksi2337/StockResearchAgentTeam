@@ -284,6 +284,8 @@ Full-stack TypeScript: React+Vite 프론트엔드, Express 백엔드, `data/` �
 - `make_individual.py` — 마크다운 `research/*.md` → 개별 Excel 한 파일 생성 (`/stock-research-formatter` 스킬에서 호출)
 - `make_portfolio.py` — 마크다운 `research/*.md` → 누적 `portfolio_master.xlsx` 추가/갱신 (`--bulk` 플래그로 폴더 일괄 처리 가능)
 
+> **행 높이 자동 계산**: `make_individual.py`·`make_portfolio.py` 모두 셀 텍스트를 상한 없이 자동으로 wrap해 행 높이를 계산함 (한글 폭 2, 영문/숫자 폭 1 기준으로 필요한 줄 수 추정). 기업 개요·경쟁력·전망처럼 긴 텍스트도 셀 안에서 잘리지 않고 다 보이므로 수기로 행 높이를 넓힐 필요 없음.
+
 **portfolio-analyzer 동작**:
 - **이미지 기본 경로**: `C:\Users\kukuk\Pictures\Screenshots` — 날짜(`2026-05-08`, `오늘`) 또는 `최신 N개` 표현으로 이미지 선택. PowerShell로 디렉토리 조회 후 목록 확인 → 역할(목표비중/보유현황) 지정. 절대경로 직접 입력도 가능.
 - 인자 2개: 첫 번째=목표비중 이미지, 두 번째=보유현황 이미지 → `data/target_portfolio.json` 갱신 후 Excel
