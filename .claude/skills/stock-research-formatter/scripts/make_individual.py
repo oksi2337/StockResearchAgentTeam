@@ -6,6 +6,7 @@
 사용법:
     python make_individual.py <md_path> [output_path]
 """
+import math
 import sys
 from pathlib import Path
 
@@ -25,6 +26,41 @@ COLOR_DOWN = "0066CC"
 COLOR_PLACEHOLDER = "999999"
 
 FONT_NAME = "맑은 고딕"
+
+# 한글·전각 문자는 폭 2, 그 외(영문·숫자·기호)는 폭 1로 계산해 줄바꿈 수를 추정
+_CJK_RANGES = (
+    (0x1100, 0x115F), (0x2E80, 0xA4CF), (0xAC00, 0xD7A3),
+    (0xF900, 0xFAFF), (0xFF00, 0xFFEF), (0x3000, 0x303F),
+)
+
+
+def _visual_width(text: str) -> float:
+    width = 0.0
+    for ch in text:
+        code = ord(ch)
+        width += 2.0 if any(lo <= code <= hi for lo, hi in _CJK_RANGES) else 1.0
+    return width
+
+
+def _lines_needed(text: str, col_width: float, padding: float = 2.0) -> int:
+    """wrap_text 셀에서 col_width(문자 단위) 기준 실제로 필요한 줄 수 추정."""
+    if not text:
+        return 1
+    usable = max(col_width - padding, 8.0)
+    lines = 0
+    for segment in str(text).split("\n"):
+        if segment == "":
+            lines += 1
+            continue
+        lines += max(1, math.ceil(_visual_width(segment) / usable))
+    return max(lines, 1)
+
+
+def _row_height_for(text: str, col_width: float, line_height: float = 16.0,
+                     padding: float = 8.0, min_height: float = 28.0) -> float:
+    lines = _lines_needed(text, col_width)
+    return max(min_height, lines * line_height + padding)
+
 
 DISPLAY_ORDER = [
     ("기업 개요", "기업 개요"),
@@ -130,7 +166,7 @@ def make_individual_xlsx(source, output_path=None):
         cell_b.alignment = Alignment(horizontal="left", vertical="center", wrap_text=True, indent=1)
         cell_b.border = border
 
-        ws.row_dimensions[row].height = max(28, min(60, len(value) // 2 + 22))
+        ws.row_dimensions[row].height = _row_height_for(str(cell_b.value), col_width=75)
         row += 1
 
     # 증권사 평가 - 1건당 1행으로 펼침
@@ -162,7 +198,7 @@ def make_individual_xlsx(source, output_path=None):
             cell_b.font = body_font
             cell_b.alignment = Alignment(horizontal="left", vertical="center", wrap_text=True, indent=1)
             cell_b.border = border
-            ws.row_dimensions[r].height = 26
+            ws.row_dimensions[r].height = _row_height_for(str(cell_b.value), col_width=75)
 
         row = end_row + 1
     else:
@@ -211,7 +247,7 @@ def make_individual_xlsx(source, output_path=None):
             cell_b.font = body_font
             cell_b.alignment = Alignment(horizontal="left", vertical="top", wrap_text=True, indent=1)
             cell_b.border = border
-            ws.row_dimensions[r].height = max(40, len(summary) // 3 + 30)
+            ws.row_dimensions[r].height = _row_height_for(content, col_width=75, min_height=40)
 
         row = end_row + 1
 

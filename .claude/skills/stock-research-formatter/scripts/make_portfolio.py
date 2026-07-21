@@ -9,6 +9,7 @@
     python make_portfolio.py <md_path> [portfolio_xlsx_path]
     python make_portfolio.py --bulk <research_dir> [portfolio_xlsx_path]
 """
+import math
 import re
 import sys
 from pathlib import Path
@@ -29,6 +30,35 @@ COLOR_DOWN = "0066CC"
 COLOR_ZEBRA = "F5F8F2"
 
 FONT_NAME = "맑은 고딕"
+
+# 한글·전각 문자는 폭 2, 그 외(영문·숫자·기호)는 폭 1로 계산해 줄바꿈 수를 추정
+_CJK_RANGES = (
+    (0x1100, 0x115F), (0x2E80, 0xA4CF), (0xAC00, 0xD7A3),
+    (0xF900, 0xFAFF), (0xFF00, 0xFFEF), (0x3000, 0x303F),
+)
+
+
+def _visual_width(text: str) -> float:
+    width = 0.0
+    for ch in text:
+        code = ord(ch)
+        width += 2.0 if any(lo <= code <= hi for lo, hi in _CJK_RANGES) else 1.0
+    return width
+
+
+def _lines_needed(text: str, col_width: float, padding: float = 2.0) -> int:
+    """wrap_text 셀에서 col_width(문자 단위) 기준 실제로 필요한 줄 수 추정."""
+    if not text:
+        return 1
+    usable = max(col_width - padding, 8.0)
+    lines = 0
+    for segment in str(text).split("\n"):
+        if segment == "":
+            lines += 1
+            continue
+        lines += max(1, math.ceil(_visual_width(segment) / usable))
+    return max(lines, 1)
+
 
 SUMMARY_SHEET = "Summary"
 RATINGS_SHEET = "Ratings"
@@ -236,6 +266,7 @@ def _write_summary_row(ws, row_idx: int, row_data: list):
     body_font = Font(name=FONT_NAME, size=10)
     zebra_fill = PatternFill("solid", start_color=COLOR_ZEBRA) if row_idx % 2 == 0 else None
 
+    max_lines = 1
     for col_idx, value in enumerate(row_data, start=1):
         c = ws.cell(row=row_idx, column=col_idx, value=value if value != "" else None)
 
@@ -253,7 +284,11 @@ def _write_summary_row(ws, row_idx: int, row_data: list):
         if zebra_fill:
             c.fill = zebra_fill
 
-    ws.row_dimensions[row_idx].height = 36
+        if isinstance(value, str) and value:
+            col_width = SUMMARY_COLUMNS[col_idx - 1][1]
+            max_lines = max(max_lines, _lines_needed(value, col_width))
+
+    ws.row_dimensions[row_idx].height = max(36, max_lines * 14 + 8)
 
 
 def _write_rating_row(ws, row_idx: int, row_data: list):
@@ -261,6 +296,7 @@ def _write_rating_row(ws, row_idx: int, row_data: list):
     body_font = Font(name=FONT_NAME, size=10)
     zebra_fill = PatternFill("solid", start_color=COLOR_ZEBRA) if row_idx % 2 == 0 else None
 
+    max_lines = 1
     for col_idx, value in enumerate(row_data, start=1):
         c = ws.cell(row=row_idx, column=col_idx, value=value if value != "" else None)
         c.font = body_font
@@ -280,7 +316,11 @@ def _write_rating_row(ws, row_idx: int, row_data: list):
         if zebra_fill:
             c.fill = zebra_fill
 
-    ws.row_dimensions[row_idx].height = 28
+        if isinstance(value, str) and value:
+            col_width = RATINGS_COLUMNS[col_idx - 1][1]
+            max_lines = max(max_lines, _lines_needed(value, col_width))
+
+    ws.row_dimensions[row_idx].height = max(28, max_lines * 14 + 8)
 
 
 def _find_summary_row(ws, ticker: str, date: str):
