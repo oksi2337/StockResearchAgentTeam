@@ -40,9 +40,13 @@ $ARGUMENTS에서 기업명과 티커를 분리하세요.
 - 검색어: `$ARGUMENTS competitive advantage market share moat 2026`
 - 목표: 핵심 경쟁 우위, 시장 점유율, 해자(Moat)
 
-**[D] 포워드 밸류에이션**
+**[D] 포워드 밸류에이션** ⚠️ 반드시 아래 검증 절차를 거칠 것 (과거 EPS 오기재·ADR 라벨링 오류 사례로 발견된 리스크)
 - 검색어: `$ARGUMENTS forward PE EV EBITDA consensus estimate 2026 2027`
 - 목표: 향후 1~2년 PER 또는 EV/EBITDA 멀티플 (컨센서스 기준)
+- **최소 2개 독립 소스 교차확인 필수** (예: stockanalysis.com, GuruFocus, Investing.com 등). 한 소스만 인용 금지.
+- **내적 정합성 검산 필수**: 인용하는 Forward PE와 EPS를 함께 적을 경우 반드시 "현재가 ÷ EPS = PER"이 실제로 맞는지 직접 나눗셈으로 검산하고, 안 맞으면 그 숫자는 쓰지 말고 재검색할 것. EPS만 단독 인용할 때도 동일 기준(현재가÷EPS)으로 결과 PER이 상식적인 범위인지 확인.
+- **ADR/이중상장 종목(예: SKHY) 주의**: 어떤 가격·EPS 기준인지(원주 vs ADR) 명시하고, ADR 비율(예: 10:1)을 적용했는지 확인. 원주 PER을 ADR 종목에 그대로 붙이지 말 것 — 라벨을 명확히 구분.
+- 소스 간 수치 편차가 크면(예: 2배 이상 차이) 단일 숫자로 확정하지 말고 **범위로 제시 + "소스별 편차 있음" 명시**. 특히 신규 상장·실적 서프라이즈 직후 종목은 컨센서스가 며칠 새 크게 바뀔 수 있으므로 과신 금지.
 
 **[E] 최근 일주일간 기업 펀더멘털 변화**
 - 검색어: `$ARGUMENTS earnings revenue operating margin latest quarter 2026`
